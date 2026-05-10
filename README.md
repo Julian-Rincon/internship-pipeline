@@ -1,12 +1,12 @@
 # Internship Pipeline System
 
-Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications and a dashboard.
+Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates and a dashboard.
 
 ## Project Status
 
 MVP manual in development.
 
-The current system is intentionally safe and reviewable: it does not scrape websites, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. It provides the manual operating layer first, before any future automation.
+The current system is intentionally safe and reviewable: it does not scrape websites, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery is demo-only and creates pending candidates that require human approval before becoming companies.
 
 ## Problem
 
@@ -26,6 +26,7 @@ Internship Pipeline System centralizes the manual workflow before automation:
 - progressive team profiles
 - manual contacts
 - applications linked to companies, users and contacts
+- discovery candidates held in a pending-review layer
 - status board and list views
 - dashboard summary for pipeline visibility
 
@@ -38,6 +39,9 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Manual contacts CRUD
 - Applications tracker
 - Applications list and board views by status
+- Demo-only company discovery candidates
+- Human approval and rejection for discovery candidates
+- Demo job postings linked to approved companies when possible
 - Company and user detail pages with related records
 - Client-side search for companies, users and contacts
 - Manual editing of application status, next action, due date and notes
@@ -139,6 +143,12 @@ Local URLs:
 - Swagger: http://localhost:8000/docs
 - n8n: http://localhost:5678
 
+## Discovery MVP
+
+The `/discovery` page runs a deterministic demo discovery process. It creates fictional `DiscoveryCandidate` records and optional demo `JobPosting` records using `.demo.example` URLs only.
+
+Candidates start as `pending_review`. Approving a candidate creates or links a company by domain or normalized company name, marks the candidate as `approved`, and links the detected job posting to the company when possible. Rejecting a candidate marks it as `rejected`. No real ATS scraping or external discovery is implemented yet.
+
 ## API Overview
 
 - `GET /health`
@@ -151,6 +161,11 @@ Local URLs:
 - `/users/{id}/applications`
 - `/contacts`
 - `/applications`
+- `/discovery-candidates`
+- `POST /discovery-candidates/run-demo-discovery`
+- `POST /discovery-candidates/{id}/approve`
+- `POST /discovery-candidates/{id}/reject`
+- `/job-postings`
 - `GET /dashboard/summary`
 
 Each resource supports the current MVP CRUD workflow through the FastAPI backend. Detailed schemas are available in Swagger at http://localhost:8000/docs after the stack is running.
@@ -163,7 +178,7 @@ Run backend tests:
 docker compose exec backend pytest
 ```
 
-The test suite overrides the FastAPI database dependency and wraps each test in a transaction with rollback. Tests should not leave companies, users, contacts or applications visible in the development dashboard.
+The test suite overrides the FastAPI database dependency and wraps each test in a transaction with rollback. Tests should not leave companies, users, contacts, applications, discovery candidates or job postings visible in the development dashboard.
 
 Run frontend build:
 
@@ -184,10 +199,11 @@ docker compose up -d frontend
 The MVP currently:
 
 - does not scrape LinkedIn or company websites
+- does not use Apollo or Hunter
 - does not send emails
 - does not automate outreach
 - does not use real personal data
-- does not call Apollo, Hunter, Resend, OpenAI, Anthropic or similar APIs
+- does not call Resend, OpenAI, Anthropic or similar APIs
 - does not publish n8n workflows
 
 The project is designed to build a safe source of truth first. Any future automation should require explicit review, compliance checks and human approval.
@@ -198,10 +214,11 @@ The project is designed to build a safe source of truth first. Any future automa
 
 - improve tracker UX
 - add detail views by company and user
-- add manual CSV/JSON import
+- expand safe discovery review workflows
 
 ### Phase 2
 
+- controlled ATS discovery research with strict allowlists
 - internal n8n workflows
 - notifications for next actions
 - manual reminders
@@ -214,7 +231,7 @@ The project is designed to build a safe source of truth first. Any future automa
 
 ### Phase 4
 
-- automated discovery
+- broader automated discovery
 - People Finder
 - compliance review and human approval gates
 

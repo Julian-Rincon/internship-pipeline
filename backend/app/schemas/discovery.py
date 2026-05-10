@@ -1,0 +1,70 @@
+from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+DiscoveryCandidateStatus = Literal["pending_review", "approved", "rejected", "ignored"]
+JobPostingStatus = Literal["open", "closed", "archived"]
+
+
+class JobPostingRead(BaseModel):
+    id: UUID
+    company_id: UUID | None
+    title: str
+    url: str
+    location: str | None
+    remote: bool | None
+    description: str | None
+    source: str
+    detected_at: datetime
+    closed_at: datetime | None
+    status: JobPostingStatus
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DiscoveryCandidateBase(BaseModel):
+    company_name: str = Field(min_length=1, max_length=255)
+    domain: str | None = Field(default=None, max_length=255)
+    careers_url: str | None = Field(default=None, max_length=2048)
+    source: str = Field(min_length=1, max_length=120)
+    source_url: str | None = Field(default=None, max_length=2048)
+    detected_job_title: str | None = Field(default=None, max_length=255)
+    detected_job_url: str | None = Field(default=None, max_length=2048)
+    country: str | None = Field(default=None, max_length=120)
+    region: str | None = Field(default=None, max_length=120)
+    ats_type: str | None = Field(default=None, max_length=120)
+    confidence_score: float | None = Field(default=None, ge=0, le=1)
+    status: DiscoveryCandidateStatus = "pending_review"
+    notes: str | None = None
+
+
+class DiscoveryCandidateUpdate(BaseModel):
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
+    domain: str | None = Field(default=None, max_length=255)
+    careers_url: str | None = Field(default=None, max_length=2048)
+    source: str | None = Field(default=None, min_length=1, max_length=120)
+    source_url: str | None = Field(default=None, max_length=2048)
+    detected_job_title: str | None = Field(default=None, max_length=255)
+    detected_job_url: str | None = Field(default=None, max_length=2048)
+    country: str | None = Field(default=None, max_length=120)
+    region: str | None = Field(default=None, max_length=120)
+    ats_type: str | None = Field(default=None, max_length=120)
+    confidence_score: float | None = Field(default=None, ge=0, le=1)
+    status: DiscoveryCandidateStatus | None = None
+    notes: str | None = None
+
+
+class DiscoveryCandidateRead(DiscoveryCandidateBase):
+    id: UUID
+    created_at: datetime
+    reviewed_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DemoDiscoveryResult(BaseModel):
+    candidates_created: int
+    job_postings_created: int
+    candidates: list[DiscoveryCandidateRead]

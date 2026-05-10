@@ -51,6 +51,14 @@ docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_demo_data
 
 The seed script is idempotent for the included demo records and uses only fictional names and `demo.example` domains.
 
+## Discovery Development
+
+Discovery is currently demo-only. Use the `/discovery` page or `POST /discovery-candidates/run-demo-discovery` to create fictional pending candidates and demo job postings. The demo flow does not perform HTTP scraping, call external APIs, use LLMs or create n8n workflows.
+
+Candidates must be reviewed before they affect the official companies list. Approval creates or links a company by domain or normalized company name and links the detected job posting to that company when possible. Rejection only updates the candidate status and review timestamp.
+
+Future ATS discovery should stay behind this pending-review layer, use conservative allowlists and avoid aggressive crawling or anti-bot bypasses.
+
 ## Useful Logs
 
 ```powershell

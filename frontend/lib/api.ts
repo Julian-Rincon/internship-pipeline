@@ -139,6 +139,45 @@ export type ApplicationPayload = {
   notes?: string | null;
 };
 
+export type DiscoveryCandidate = {
+  id: string;
+  company_name: string;
+  domain: string | null;
+  careers_url: string | null;
+  source: string;
+  source_url: string | null;
+  detected_job_title: string | null;
+  detected_job_url: string | null;
+  country: string | null;
+  region: string | null;
+  ats_type: string | null;
+  confidence_score: number | null;
+  status: "pending_review" | "approved" | "rejected" | "ignored";
+  notes: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
+export type JobPosting = {
+  id: string;
+  company_id: string | null;
+  title: string;
+  url: string;
+  location: string | null;
+  remote: boolean | null;
+  description: string | null;
+  source: string;
+  detected_at: string;
+  closed_at: string | null;
+  status: "open" | "closed" | "archived";
+};
+
+export type DemoDiscoveryResult = {
+  candidates_created: number;
+  job_postings_created: number;
+  candidates: DiscoveryCandidate[];
+};
+
 export type DashboardSummary = {
   total_companies: number;
   total_users: number;
@@ -462,6 +501,87 @@ export async function deleteApplication(applicationId: string): Promise<void> {
     const body = await response.json().catch(() => null);
     throw new Error(body?.detail ?? `Backend returned ${response.status}`);
   }
+}
+
+export async function getDiscoveryCandidates(): Promise<ApiResult<DiscoveryCandidate[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/discovery-candidates`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch discovery candidates", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load discovery candidates"
+    };
+  }
+}
+
+export async function getJobPostings(): Promise<ApiResult<JobPosting[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/job-postings`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch job postings", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load job postings"
+    };
+  }
+}
+
+export async function runDemoDiscovery(): Promise<DemoDiscoveryResult> {
+  const response = await fetch(`${getApiUrl()}/discovery-candidates/run-demo-discovery`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function approveDiscoveryCandidate(candidateId: string): Promise<Company> {
+  const response = await fetch(`${getApiUrl()}/discovery-candidates/${candidateId}/approve`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function rejectDiscoveryCandidate(candidateId: string): Promise<DiscoveryCandidate> {
+  const response = await fetch(`${getApiUrl()}/discovery-candidates/${candidateId}/reject`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>> {
