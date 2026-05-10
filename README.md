@@ -38,6 +38,8 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Manual contacts CRUD
 - Applications tracker
 - Applications list and board views by status
+- Company and user detail pages with related records
+- Client-side search for companies, users and contacts
 - Manual editing of application status, next action, due date and notes
 - Controlled application deletion with confirmation
 - Filters by status, user, company and type
@@ -141,7 +143,12 @@ Local URLs:
 
 - `GET /health`
 - `/companies`
+- `/companies/{id}`
+- `/companies/{id}/contacts`
+- `/companies/{id}/applications`
 - `/users`
+- `/users/{id}`
+- `/users/{id}/applications`
 - `/contacts`
 - `/applications`
 - `GET /dashboard/summary`

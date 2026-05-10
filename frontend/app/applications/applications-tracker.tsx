@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import {
   deleteApplication,
@@ -125,19 +126,23 @@ function DeleteButton({ applicationId }: { applicationId: string }) {
 
 function ApplicationCard({
   application,
-  companyName,
-  userName,
+  company,
+  user,
   contactName
 }: {
   application: Application;
-  companyName: string;
-  userName: string;
+  company: Company | undefined;
+  user: User | undefined;
   contactName: string;
 }) {
   return (
     <div className="kanban-card">
-      <strong>{companyName}</strong>
-      <span className="muted">{userName}</span>
+      <strong>
+        {company ? <Link href={`/companies/${company.id}`}>{company.name}</Link> : "Unknown company"}
+      </strong>
+      <span className="muted">
+        {user ? <Link href={`/users/${user.id}`}>{user.name}</Link> : "Unknown user"}
+      </span>
       <span className="muted">{contactName}</span>
       <div className="status-list">
         <span className="badge badge-in_progress">{application.type}</span>
@@ -168,8 +173,8 @@ export function ApplicationsTracker({
   const [companyFilter, setCompanyFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
 
-  const companyById = useMemo(() => new Map(companies.map((company) => [company.id, company.name])), [companies]);
-  const userById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
+  const companyById = useMemo(() => new Map(companies.map((company) => [company.id, company])), [companies]);
+  const userById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
   const contactById = useMemo(() => new Map(contacts.map((contact) => [contact.id, contact.full_name])), [contacts]);
 
   const filteredApplications = applications.filter((application) => {
@@ -263,8 +268,24 @@ export function ApplicationsTracker({
               ) : (
                 filteredApplications.map((application) => (
                   <tr key={application.id}>
-                    <td>{companyById.get(application.company_id) ?? "Unknown company"}</td>
-                    <td>{userById.get(application.user_id) ?? "Unknown user"}</td>
+                    <td>
+                      {companyById.get(application.company_id) ? (
+                        <Link href={`/companies/${application.company_id}`}>
+                          {companyById.get(application.company_id)?.name}
+                        </Link>
+                      ) : (
+                        "Unknown company"
+                      )}
+                    </td>
+                    <td>
+                      {userById.get(application.user_id) ? (
+                        <Link href={`/users/${application.user_id}`}>
+                          {userById.get(application.user_id)?.name}
+                        </Link>
+                      ) : (
+                        "Unknown user"
+                      )}
+                    </td>
                     <td>
                       {application.contact_id
                         ? contactById.get(application.contact_id) ?? "Unknown contact"
@@ -301,8 +322,8 @@ export function ApplicationsTracker({
                   statusApplications.map((application) => (
                     <ApplicationCard
                       application={application}
-                      companyName={companyById.get(application.company_id) ?? "Unknown company"}
-                      userName={userById.get(application.user_id) ?? "Unknown user"}
+                      company={companyById.get(application.company_id)}
+                      user={userById.get(application.user_id)}
                       contactName={
                         application.contact_id
                           ? contactById.get(application.contact_id) ?? "Unknown contact"
@@ -320,4 +341,3 @@ export function ApplicationsTracker({
     </div>
   );
 }
-

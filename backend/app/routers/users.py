@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.models.application import Application
 from app.models.user import User
+from app.schemas.application import ApplicationRead
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -44,6 +46,19 @@ async def get_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> User:
     return user
 
 
+@router.get("/{user_id}/applications", response_model=list[ApplicationRead])
+async def list_user_applications(user_id: UUID, db: AsyncSession = Depends(get_db)) -> list[Application]:
+    if await db.get(User, user_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    result = await db.scalars(
+        select(Application)
+        .where(Application.user_id == user_id)
+        .order_by(Application.created_at.desc())
+    )
+    return list(result)
+
+
 @router.patch("/{user_id}", response_model=UserRead)
 async def update_user(
     user_id: UUID,
@@ -79,4 +94,3 @@ async def delete_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> Resp
     await db.delete(user)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

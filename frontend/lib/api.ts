@@ -180,6 +180,69 @@ export async function getCompanies(): Promise<ApiResult<Company[]>> {
   }
 }
 
+export async function getCompany(companyId: string): Promise<ApiResult<Company | null>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/companies/${companyId}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch company", error);
+    return {
+      ok: false,
+      data: null,
+      error: error instanceof Error ? error.message : "Failed to load company"
+    };
+  }
+}
+
+export async function getCompanyContacts(companyId: string): Promise<ApiResult<Contact[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/companies/${companyId}/contacts`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch company contacts", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load company contacts"
+    };
+  }
+}
+
+export async function getCompanyApplications(companyId: string): Promise<ApiResult<Application[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/companies/${companyId}/applications`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch company applications", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load company applications"
+    };
+  }
+}
+
 export async function createCompany(payload: CompanyPayload): Promise<Company> {
   const response = await fetch(`${getApiUrl()}/companies`, {
     method: "POST",
@@ -214,6 +277,48 @@ export async function getUsers(): Promise<ApiResult<User[]>> {
       ok: false,
       data: [],
       error: error instanceof Error ? error.message : "Failed to load users"
+    };
+  }
+}
+
+export async function getUser(userId: string): Promise<ApiResult<User | null>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/users/${userId}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch user", error);
+    return {
+      ok: false,
+      data: null,
+      error: error instanceof Error ? error.message : "Failed to load user"
+    };
+  }
+}
+
+export async function getUserApplications(userId: string): Promise<ApiResult<Application[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/users/${userId}/applications`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch user applications", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load user applications"
     };
   }
 }

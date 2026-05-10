@@ -6,8 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.models.application import Application
 from app.models.company import Company
+from app.models.contact import Contact
+from app.schemas.application import ApplicationRead
 from app.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
+from app.schemas.contact import ContactRead
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
@@ -42,6 +46,35 @@ async def get_company(company_id: UUID, db: AsyncSession = Depends(get_db)) -> C
     if company is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
     return company
+
+
+@router.get("/{company_id}/contacts", response_model=list[ContactRead])
+async def list_company_contacts(company_id: UUID, db: AsyncSession = Depends(get_db)) -> list[Contact]:
+    if await db.get(Company, company_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
+
+    result = await db.scalars(
+        select(Contact)
+        .where(Contact.company_id == company_id)
+        .order_by(Contact.created_at.desc())
+    )
+    return list(result)
+
+
+@router.get("/{company_id}/applications", response_model=list[ApplicationRead])
+async def list_company_applications(
+    company_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[Application]:
+    if await db.get(Company, company_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
+
+    result = await db.scalars(
+        select(Application)
+        .where(Application.company_id == company_id)
+        .order_by(Application.created_at.desc())
+    )
+    return list(result)
 
 
 @router.patch("/{company_id}", response_model=CompanyRead)
@@ -79,4 +112,3 @@ async def delete_company(company_id: UUID, db: AsyncSession = Depends(get_db)) -
     await db.delete(company)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

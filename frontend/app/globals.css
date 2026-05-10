@@ -200,6 +200,39 @@ button:disabled {
   margin-bottom: 16px;
 }
 
+.search-field {
+  margin-bottom: 16px;
+  max-width: 520px;
+}
+
+.breadcrumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.breadcrumb-row a {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.detail-grid > div {
+  display: grid;
+  gap: 6px;
+}
+
+.wide-detail {
+  grid-column: 1 / -1;
+}
+
 .danger-button {
   background: #be123c;
 }

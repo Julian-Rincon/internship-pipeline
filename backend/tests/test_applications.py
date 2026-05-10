@@ -215,3 +215,34 @@ async def test_create_application_rejects_contact_from_other_company(client: Asy
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Contact does not belong to application company."
+
+
+@pytest.mark.asyncio
+async def test_list_company_contacts(client: AsyncClient):
+    company_id = await create_company(client)
+    contact_id = await create_contact(client, company_id)
+
+    response = await client.get(f"/companies/{company_id}/contacts")
+
+    assert response.status_code == 200
+    assert any(contact["id"] == contact_id for contact in response.json())
+
+
+@pytest.mark.asyncio
+async def test_list_company_applications(client: AsyncClient):
+    application = await create_application(client, with_contact=True)
+
+    response = await client.get(f"/companies/{application['company_id']}/applications")
+
+    assert response.status_code == 200
+    assert any(item["id"] == application["id"] for item in response.json())
+
+
+@pytest.mark.asyncio
+async def test_list_user_applications(client: AsyncClient):
+    application = await create_application(client, with_contact=True)
+
+    response = await client.get(f"/users/{application['user_id']}/applications")
+
+    assert response.status_code == 200
+    assert any(item["id"] == application["id"] for item in response.json())

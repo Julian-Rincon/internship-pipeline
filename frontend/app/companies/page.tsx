@@ -1,4 +1,5 @@
 import { CompanyForm } from "./company-form";
+import { CompanyList } from "./company-list";
 import { getCompanies } from "../../lib/api";
 
 export const dynamic = "force-dynamic";
@@ -14,51 +15,8 @@ export default async function CompaniesPage() {
 
       <CompanyForm />
 
-      <div className="panel table-wrap" style={{ marginTop: 16 }}>
-        {!result.ok ? <p className="notice error">Could not load companies: {result.error}</p> : null}
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Tier</th>
-              <th>Country</th>
-              <th>Careers</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="muted">
-                  No companies yet.
-                </td>
-              </tr>
-            ) : (
-              companies.map((company) => (
-                <tr key={company.id}>
-                  <td>
-                    <strong>{company.name}</strong>
-                    <br />
-                    <span className="muted">{company.domain ?? "No domain"}</span>
-                  </td>
-                  <td>{company.tier ?? "-"}</td>
-                  <td>{company.country ?? "-"}</td>
-                  <td>
-                    {company.careers_url ? (
-                      <a href={company.careers_url} target="_blank" rel="noreferrer">
-                        Careers
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td>{company.status}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {!result.ok ? <p className="notice error">Could not load companies: {result.error}</p> : null}
+      <CompanyList companies={companies} />
     </section>
   );
 }
