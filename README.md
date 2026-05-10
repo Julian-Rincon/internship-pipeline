@@ -85,23 +85,28 @@ Screenshots are intentionally left as placeholders until a demo dataset and fina
 
 ### Dashboard
 
-_Screenshot placeholder_
+<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/debb56d7-d5b0-4cc2-9970-47afc1be91e8" />
+
 
 ### Companies
 
-_Screenshot placeholder_
+<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/eca816ee-a1ce-4283-a3c3-6afcedfa4cd1" />
+
 
 ### Users
 
-_Screenshot placeholder_
+<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/2539802f-f9d3-4832-b91b-68fbe1a35d89" />
+
 
 ### Contacts
 
-_Screenshot placeholder_
+<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/87e28cfd-d0cc-4b6f-9e9d-876b157ab2ac" />
+
 
 ### Applications Board
 
-_Screenshot placeholder_
+<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/1c4d5d7e-49d8-400f-953a-30fc5b74be6d" />
+
 
 ## Local Setup on Windows PowerShell
 
