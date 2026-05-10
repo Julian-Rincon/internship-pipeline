@@ -192,6 +192,44 @@ export type DemoDiscoveryResult = {
   candidates: DiscoveryCandidate[];
 };
 
+export type DiscoverySource = {
+  id: string;
+  name: string;
+  source_type: "greenhouse" | "lever" | "ashby";
+  source_key: string;
+  base_url: string | null;
+  company_hint: string | null;
+  country: string | null;
+  region: string | null;
+  enabled: boolean;
+  last_run_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  created_at: string;
+};
+
+export type DiscoverySourcePayload = {
+  name: string;
+  source_type: DiscoverySource["source_type"];
+  source_key: string;
+  base_url?: string | null;
+  company_hint?: string | null;
+  country?: string | null;
+  region?: string | null;
+  enabled?: boolean;
+};
+
+export type DiscoverySourceRunResult = {
+  source_id: string;
+  source_name: string;
+  fetched_count: number;
+  internship_like_count: number;
+  candidates_created: number;
+  candidates_skipped: number;
+  job_postings_created: number;
+  errors: string[];
+};
+
 export type DashboardSummary = {
   total_companies: number;
   total_users: number;
@@ -663,6 +701,101 @@ export async function approveDiscoveryCandidate(candidateId: string): Promise<Co
 
 export async function rejectDiscoveryCandidate(candidateId: string): Promise<DiscoveryCandidate> {
   const response = await fetch(`${getApiUrl()}/discovery-candidates/${candidateId}/reject`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getDiscoverySources(): Promise<ApiResult<DiscoverySource[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/discovery-sources`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch discovery sources", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load discovery sources"
+    };
+  }
+}
+
+export async function createDiscoverySource(payload: DiscoverySourcePayload): Promise<DiscoverySource> {
+  const response = await fetch(`${getApiUrl()}/discovery-sources`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function updateDiscoverySource(
+  sourceId: string,
+  payload: Partial<DiscoverySourcePayload>
+): Promise<DiscoverySource> {
+  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function deleteDiscoverySource(sourceId: string): Promise<void> {
+  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
+    method: "DELETE"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+}
+
+export async function runDiscoverySource(sourceId: string): Promise<DiscoverySourceRunResult> {
+  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}/run`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function runEnabledDiscoverySources(): Promise<DiscoverySourceRunResult[]> {
+  const response = await fetch(`${getApiUrl()}/discovery-sources/run-enabled`, {
     method: "POST"
   });
 

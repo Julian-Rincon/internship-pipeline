@@ -10,6 +10,7 @@ from app.models import application  # noqa: F401
 from app.models import company  # noqa: F401
 from app.models import contact  # noqa: F401
 from app.models import discovery_candidate  # noqa: F401
+from app.models import discovery_source  # noqa: F401
 from app.models import job_posting  # noqa: F401
 from app.models import user  # noqa: F401
 

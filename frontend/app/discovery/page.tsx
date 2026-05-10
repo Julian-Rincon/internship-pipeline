@@ -1,5 +1,6 @@
 import { CandidateActions, RunDemoDiscoveryButton } from "./discovery-actions";
 import { getDiscoveryCandidates, type DiscoveryCandidate } from "../../lib/api";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +106,9 @@ export default async function DiscoveryPage() {
       </p>
 
       <RunDemoDiscoveryButton />
+      <div className="breadcrumb-row" style={{ marginTop: 16 }}>
+        <Link href="/discovery/sources">Manage ATS sources</Link>
+      </div>
 
       {!result.ok ? <p className="notice error">Could not load discovery candidates: {result.error}</p> : null}
 

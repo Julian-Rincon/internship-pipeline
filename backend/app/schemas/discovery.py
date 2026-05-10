@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 DiscoveryCandidateStatus = Literal["pending_review", "approved", "rejected", "ignored"]
 JobPostingStatus = Literal["open", "closed", "archived"]
+DiscoverySourceType = Literal["greenhouse", "lever", "ashby"]
 
 
 class JobPostingRead(BaseModel):
@@ -68,3 +69,50 @@ class DemoDiscoveryResult(BaseModel):
     candidates_created: int
     job_postings_created: int
     candidates: list[DiscoveryCandidateRead]
+
+
+class DiscoverySourceBase(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    source_type: DiscoverySourceType
+    source_key: str = Field(min_length=1, max_length=255)
+    base_url: str | None = Field(default=None, max_length=2048)
+    company_hint: str | None = Field(default=None, max_length=255)
+    country: str | None = Field(default=None, max_length=120)
+    region: str | None = Field(default=None, max_length=120)
+    enabled: bool = True
+
+
+class DiscoverySourceCreate(DiscoverySourceBase):
+    pass
+
+
+class DiscoverySourceUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    source_type: DiscoverySourceType | None = None
+    source_key: str | None = Field(default=None, min_length=1, max_length=255)
+    base_url: str | None = Field(default=None, max_length=2048)
+    company_hint: str | None = Field(default=None, max_length=255)
+    country: str | None = Field(default=None, max_length=120)
+    region: str | None = Field(default=None, max_length=120)
+    enabled: bool | None = None
+
+
+class DiscoverySourceRead(DiscoverySourceBase):
+    id: UUID
+    last_run_at: datetime | None
+    last_status: str | None
+    last_error: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DiscoverySourceRunResult(BaseModel):
+    source_id: UUID
+    source_name: str
+    fetched_count: int
+    internship_like_count: int
+    candidates_created: int
+    candidates_skipped: int
+    job_postings_created: int
+    errors: list[str]

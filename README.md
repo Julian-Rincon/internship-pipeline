@@ -6,7 +6,7 @@ Self-hosted platform for organizing an international internship pipeline with co
 
 MVP manual in development.
 
-The current system is intentionally safe and reviewable: it does not scrape websites, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery is demo-only and creates pending candidates that require human approval before becoming companies. Reminders are internal visibility only and do not send notifications.
+The current system is intentionally safe and reviewable: it does not scrape LinkedIn, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery supports demo candidates and controlled public ATS source intake, both requiring human approval before becoming companies. Reminders are internal visibility only and do not send notifications.
 
 ## Problem
 
@@ -27,6 +27,7 @@ Internship Pipeline System centralizes the manual workflow before automation:
 - manual contacts
 - applications linked to companies, users and contacts
 - discovery candidates held in a pending-review layer
+- controlled public ATS source intake for Greenhouse, Lever and Ashby
 - manual company claiming for team coordination
 - internal reminders for overdue and upcoming manual actions
 - status board and list views
@@ -42,6 +43,7 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Applications tracker
 - Applications list and board views by status
 - Demo-only company discovery candidates
+- Public unauthenticated ATS source intake for internship-like postings
 - Human approval and rejection for discovery candidates
 - Demo job postings linked to approved companies when possible
 - Company claiming and release for manual team coordination
@@ -154,7 +156,9 @@ Local URLs:
 
 The `/discovery` page runs a deterministic demo discovery process. It creates fictional `DiscoveryCandidate` records and optional demo `JobPosting` records using `.demo.example` URLs only.
 
-Candidates start as `pending_review`. Approving a candidate creates or links a company by domain or normalized company name, marks the candidate as `approved`, and links the detected job posting to the company when possible. Rejecting a candidate marks it as `rejected`. No real ATS scraping or external discovery is implemented yet.
+Candidates start as `pending_review`. Approving a candidate creates or links a company by domain or normalized company name, marks the candidate as `approved`, and links the detected job posting to the company when possible. Rejecting a candidate marks it as `rejected`.
+
+`/discovery/sources` lets the team register controlled public ATS board sources for Greenhouse, Lever and Ashby. Source runs use unauthenticated HTTP GET only, do not store credentials, do not crawl linked pages and only keep likely internship or early-career titles. Fetched jobs create pending discovery candidates and open job postings; candidates still require human approval.
 
 ## Company Claiming
 
@@ -192,6 +196,9 @@ Local-dev limitation: the reminders summary endpoint does not require authentica
 - `/contacts`
 - `/applications`
 - `/discovery-candidates`
+- `/discovery-sources`
+- `POST /discovery-sources/{id}/run`
+- `POST /discovery-sources/run-enabled`
 - `POST /discovery-candidates/run-demo-discovery`
 - `POST /discovery-candidates/{id}/approve`
 - `POST /discovery-candidates/{id}/reject`
@@ -231,6 +238,7 @@ docker compose up -d frontend
 The MVP currently:
 
 - does not scrape LinkedIn or company websites
+- only calls configured public ATS JSON endpoints with unauthenticated GET requests
 - does not use Apollo or Hunter
 - does not send emails
 - does not automate outreach

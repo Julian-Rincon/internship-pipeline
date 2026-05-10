@@ -59,6 +59,20 @@ Candidates must be reviewed before they affect the official companies list. Appr
 
 Future ATS discovery should stay behind this pending-review layer, use conservative allowlists and avoid aggressive crawling or anti-bot bypasses.
 
+## Discovery Sources Development
+
+Use `/discovery/sources` to add controlled public ATS sources. Supported source types are `greenhouse`, `lever` and `ashby`.
+
+`source_key` examples:
+
+- Greenhouse: board token from `boards-api.greenhouse.io/v1/boards/{board_token}`
+- Lever: site from `api.lever.co/v0/postings/{site}`
+- Ashby: job board name from `api.ashbyhq.com/posting-api/job-board/{job_board_name}`
+
+Running a source performs one unauthenticated GET request to the known JSON endpoint, applies a simple internship/early-career title filter, creates or reuses job postings by URL and creates pending discovery candidates. It does not crawl pages, bypass anti-bot systems, send outreach or approve companies automatically.
+
+Every fetched candidate must still be reviewed and approved from `/discovery` before it becomes an official company.
+
 ## Company Claiming Development
 
 Company claiming is a manual coordination feature. Use `/companies/{id}` to select a user, add optional notes and claim a company. Claimed companies can be released, or moved between `claimed`, `paused` and `done`.
