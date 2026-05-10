@@ -81,32 +81,27 @@ in FastAPI, PostgreSQL and the frontend.
 
 ## Screenshots
 
-Screenshots are intentionally left as placeholders until a demo dataset and final UI pass are prepared.
+Screenshots below show the current manual MVP. Local screenshot assets are stored under `docs/assets/screenshots/`.
 
 ### Dashboard
 
 <img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/debb56d7-d5b0-4cc2-9970-47afc1be91e8" />
 
-
 ### Companies
 
 <img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/eca816ee-a1ce-4283-a3c3-6afcedfa4cd1" />
-
 
 ### Users
 
 <img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/2539802f-f9d3-4832-b91b-68fbe1a35d89" />
 
-
 ### Contacts
 
 <img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/87e28cfd-d0cc-4b6f-9e9d-876b157ab2ac" />
 
-
 ### Applications Board
 
 <img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/1c4d5d7e-49d8-400f-953a-30fc5b74be6d" />
-
 
 ## Local Setup on Windows PowerShell
 
@@ -122,7 +117,17 @@ Copy-Item .env.example .env
 docker compose up --build
 docker compose exec backend alembic upgrade head
 docker compose exec backend pytest
-docker compose run --rm frontend npm run build
+docker compose run --rm --no-deps frontend npm run validate:build
+```
+
+## Demo Data
+
+The repository includes a local demo seed script with fictional data only. It creates sample companies, users, contacts and applications using clearly fake `demo.example` domains. The records are intended for local demos and screenshots, not for production use.
+
+Load demo data after applying migrations:
+
+```powershell
+docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_demo_data.py"
 ```
 
 Local URLs:
@@ -156,7 +161,15 @@ The test suite overrides the FastAPI database dependency and wraps each test in 
 Run frontend build:
 
 ```powershell
-docker compose run --rm frontend npm run build
+docker compose run --rm --no-deps frontend npm run validate:build
+```
+
+If the dev server ever shows stale `.next` chunk errors after build validation, restart it with a clean Next.js cache:
+
+```powershell
+docker compose stop frontend
+docker compose run --rm --no-deps frontend npm run clean
+docker compose up -d frontend
 ```
 
 ## Safety, Ethics and Compliance

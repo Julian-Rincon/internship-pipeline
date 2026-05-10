@@ -39,6 +39,7 @@ services:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
       - ./backend/tests:/app/tests
+      - ./scripts:/app/scripts
       - ./backend/alembic.ini:/app/alembic.ini
 
   frontend:
@@ -54,6 +55,7 @@ services:
     volumes:
       - ./frontend:/app
       - frontend-node-modules:/app/node_modules
+      - frontend-next-cache:/app/.next
 
   n8n:
     image: n8nio/n8n:latest
@@ -78,4 +80,5 @@ volumes:
   postgres-data:
   redis-data:
   frontend-node-modules:
+  frontend-next-cache:
   n8n-data:

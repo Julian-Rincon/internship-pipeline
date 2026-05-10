@@ -24,8 +24,32 @@ Tests use a FastAPI dependency override and transaction rollback per test. They 
 ## Validate Frontend
 
 ```powershell
-docker compose run --rm frontend npm run build
+docker compose run --rm --no-deps frontend npm run validate:build
 ```
+
+`validate:build` removes `.next`, runs `next build`, and removes `.next` again. This keeps the development server from reusing stale production build chunks.
+
+## Clean and Restart Frontend Dev
+
+If a route fails with an error like `Cannot find module '../991.js'`, the Next.js cache is stale. Clean and restart the frontend:
+
+```powershell
+docker compose stop frontend
+docker compose run --rm --no-deps frontend npm run clean
+docker compose up -d frontend
+```
+
+The Compose setup mounts `/app/.next` as a Docker named volume instead of writing it into the host `frontend/.next` folder. `.next` is still ignored by Git and should never be committed.
+
+## Load Demo Data
+
+After migrations are applied, load fictional demo records:
+
+```powershell
+docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_demo_data.py"
+```
+
+The seed script is idempotent for the included demo records and uses only fictional names and `demo.example` domains.
 
 ## Useful Logs
 
