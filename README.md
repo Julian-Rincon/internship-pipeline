@@ -85,23 +85,23 @@ Screenshots below show the current manual MVP. Local screenshot assets are store
 
 ### Dashboard
 
-<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/debb56d7-d5b0-4cc2-9970-47afc1be91e8" />
+![Dashboard](docs/assets/screenshots/dashboard.png)
 
 ### Companies
 
-<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/eca816ee-a1ce-4283-a3c3-6afcedfa4cd1" />
+![Companies](docs/assets/screenshots/companies.png)
 
 ### Users
 
-<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/2539802f-f9d3-4832-b91b-68fbe1a35d89" />
+![Users](docs/assets/screenshots/users.png)
 
 ### Contacts
 
-<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/87e28cfd-d0cc-4b6f-9e9d-876b157ab2ac" />
+![Contacts](docs/assets/screenshots/contacts.png)
 
 ### Applications Board
 
-<img width="1280" height="976" alt="image" src="https://github.com/user-attachments/assets/1c4d5d7e-49d8-400f-953a-30fc5b74be6d" />
+![Applications Board](docs/assets/screenshots/applications-board.png)
 
 ## Local Setup on Windows PowerShell
 
