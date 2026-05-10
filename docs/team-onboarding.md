@@ -81,6 +81,17 @@ Create applications manually and link them to:
 
 Keep status, next action, due date and notes up to date. This is the main tracker for team activity.
 
+You can also create applications from reviewed job postings:
+
+1. Run ATS sources from `/discovery/sources`.
+2. Review candidates in `/discovery`.
+3. Approve the candidate so it creates or links a company.
+4. Open `/job-postings`.
+5. Link any unlinked posting to the approved company if needed.
+6. Select a user and create a manual application from the posting.
+
+This flow keeps the job URL and title in the application notes for context.
+
 ## 7. Use Reminders
 
 Open `/reminders`.

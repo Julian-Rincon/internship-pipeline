@@ -42,6 +42,7 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Manual contacts CRUD
 - Applications tracker
 - Applications list and board views by status
+- Job postings page for reviewed opportunities
 - Demo-only company discovery candidates
 - Public unauthenticated ATS source intake for internship-like postings
 - Human approval and rejection for discovery candidates
@@ -52,6 +53,7 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Company and user detail pages with related records
 - Client-side search for companies, users and contacts
 - Manual editing of application status, next action, due date and notes
+- Manual application creation from linked job postings
 - Controlled application deletion with confirmation
 - Filters by status, user, company and type
 - Company ownership filters and dashboard ownership counts
@@ -169,6 +171,8 @@ Candidates start as `pending_review`. Approving a candidate creates or links a c
 
 `/discovery/sources` lets the team register controlled public ATS board sources for Greenhouse, Lever and Ashby. Source runs use unauthenticated HTTP GET only, do not store credentials, do not crawl linked pages and only keep likely internship or early-career titles. Fetched jobs create pending discovery candidates and open job postings; candidates still require human approval.
 
+`/job-postings` shows fetched and demo job postings. The team can manually link a posting to an approved company and create an application from that reviewed opportunity.
+
 ## Company Claiming
 
 Companies can be manually claimed by a selected user. The ownership fields are `owner_user_id`, `ownership_status`, `claimed_at` and `ownership_notes`. Claiming is a coordination tool only; there is no authentication or permissions layer yet, so the user is selected manually from the existing users list.
@@ -212,6 +216,8 @@ Local-dev limitation: the reminders summary endpoint does not require authentica
 - `POST /discovery-candidates/{id}/approve`
 - `POST /discovery-candidates/{id}/reject`
 - `/job-postings`
+- `PATCH /job-postings/{id}/link-company`
+- `POST /job-postings/{id}/create-application`
 - `GET /reminders`
 - `GET /reminders/n8n-summary`
 - `GET /dashboard/summary`

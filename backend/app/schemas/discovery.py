@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.application import ApplicationStatus, ApplicationType
 
 DiscoveryCandidateStatus = Literal["pending_review", "approved", "rejected", "ignored"]
 JobPostingStatus = Literal["open", "closed", "archived"]
@@ -23,6 +25,20 @@ class JobPostingRead(BaseModel):
     status: JobPostingStatus
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class JobPostingCompanyLink(BaseModel):
+    company_id: UUID
+
+
+class JobPostingApplicationCreate(BaseModel):
+    user_id: UUID
+    contact_id: UUID | None = None
+    type: ApplicationType = "formal"
+    status: ApplicationStatus = "researching"
+    next_action: str | None = Field(default=None, max_length=2048)
+    next_action_due: date | None = None
+    notes: str | None = None
 
 
 class DiscoveryCandidateBase(BaseModel):

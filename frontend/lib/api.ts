@@ -153,6 +153,16 @@ export type ApplicationPayload = {
   notes?: string | null;
 };
 
+export type JobPostingApplicationPayload = {
+  user_id: string;
+  contact_id?: string | null;
+  type?: Application["type"];
+  status?: Application["status"];
+  next_action?: string | null;
+  next_action_due?: string | null;
+  notes?: string | null;
+};
+
 export type DiscoveryCandidate = {
   id: string;
   company_name: string;
@@ -652,9 +662,20 @@ export async function getDiscoveryCandidates(): Promise<ApiResult<DiscoveryCandi
   }
 }
 
-export async function getJobPostings(): Promise<ApiResult<JobPosting[]>> {
+export async function getJobPostings(filters?: {
+  status?: string;
+  source?: string;
+  title?: string;
+  company_id?: string;
+}): Promise<ApiResult<JobPosting[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/job-postings`, {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set("status", filters.status);
+    if (filters?.source) params.set("source", filters.source);
+    if (filters?.title) params.set("title", filters.title);
+    if (filters?.company_id) params.set("company_id", filters.company_id);
+    const query = params.toString();
+    const response = await fetch(`${getApiUrl()}/job-postings${query ? `?${query}` : ""}`, {
       cache: "no-store"
     });
 
@@ -671,6 +692,43 @@ export async function getJobPostings(): Promise<ApiResult<JobPosting[]>> {
       error: error instanceof Error ? error.message : "Failed to load job postings"
     };
   }
+}
+
+export async function linkJobPostingCompany(jobPostingId: string, companyId: string): Promise<JobPosting> {
+  const response = await fetch(`${getApiUrl()}/job-postings/${jobPostingId}/link-company`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ company_id: companyId })
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function createApplicationFromJobPosting(
+  jobPostingId: string,
+  payload: JobPostingApplicationPayload
+): Promise<Application> {
+  const response = await fetch(`${getApiUrl()}/job-postings/${jobPostingId}/create-application`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function runDemoDiscovery(): Promise<DemoDiscoveryResult> {

@@ -73,6 +73,8 @@ Running a source performs one unauthenticated GET request to the known JSON endp
 
 Every fetched candidate must still be reviewed and approved from `/discovery` before it becomes an official company.
 
+Job postings created by discovery source intake are visible at `/job-postings`. A posting must be linked to a company before it can create an application. Use `PATCH /job-postings/{id}/link-company` to link manually and `POST /job-postings/{id}/create-application` to create a manual application from a reviewed posting.
+
 ## Company Claiming Development
 
 Company claiming is a manual coordination feature. Use `/companies/{id}` to select a user, add optional notes and claim a company. Claimed companies can be released, or moved between `claimed`, `paused` and `done`.

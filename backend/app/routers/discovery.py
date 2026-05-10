@@ -1,19 +1,25 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.models.application import Application
 from app.models.company import Company
+from app.models.contact import Contact
 from app.models.discovery_candidate import DiscoveryCandidate
 from app.models.job_posting import JobPosting
+from app.models.user import User
+from app.schemas.application import ApplicationRead
 from app.schemas.company import CompanyRead
 from app.schemas.discovery import (
     DemoDiscoveryResult,
     DiscoveryCandidateRead,
     DiscoveryCandidateUpdate,
+    JobPostingApplicationCreate,
+    JobPostingCompanyLink,
     JobPostingRead,
 )
 from app.services.discovery import run_demo_discovery
@@ -23,8 +29,24 @@ job_postings_router = APIRouter(prefix="/job-postings", tags=["job-postings"])
 
 
 @job_postings_router.get("", response_model=list[JobPostingRead])
-async def list_job_postings(db: AsyncSession = Depends(get_db)) -> list[JobPosting]:
-    result = await db.scalars(select(JobPosting).order_by(JobPosting.detected_at.desc()))
+async def list_job_postings(
+    status_filter: str | None = Query(default=None, alias="status"),
+    source: str | None = None,
+    company_id: UUID | None = None,
+    title: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> list[JobPosting]:
+    statement = select(JobPosting)
+    if status_filter:
+        statement = statement.where(JobPosting.status == status_filter)
+    if source:
+        statement = statement.where(JobPosting.source == source)
+    if company_id:
+        statement = statement.where(JobPosting.company_id == company_id)
+    if title:
+        statement = statement.where(JobPosting.title.ilike(f"%{title}%"))
+
+    result = await db.scalars(statement.order_by(JobPosting.detected_at.desc()))
     return list(result)
 
 
@@ -34,6 +56,68 @@ async def get_job_posting(job_posting_id: UUID, db: AsyncSession = Depends(get_d
     if job_posting is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
     return job_posting
+
+
+@job_postings_router.patch("/{job_posting_id}/link-company", response_model=JobPostingRead)
+async def link_job_posting_company(
+    job_posting_id: UUID,
+    payload: JobPostingCompanyLink,
+    db: AsyncSession = Depends(get_db),
+) -> JobPosting:
+    job_posting = await db.get(JobPosting, job_posting_id)
+    if job_posting is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+    if await db.get(Company, payload.company_id) is None:
+        raise HTTPException(status_code=422, detail="Company not found.")
+
+    job_posting.company_id = payload.company_id
+    await db.commit()
+    await db.refresh(job_posting)
+    return job_posting
+
+
+@job_postings_router.post("/{job_posting_id}/create-application", response_model=ApplicationRead)
+async def create_application_from_job_posting(
+    job_posting_id: UUID,
+    payload: JobPostingApplicationCreate,
+    db: AsyncSession = Depends(get_db),
+) -> Application:
+    job_posting = await db.get(JobPosting, job_posting_id)
+    if job_posting is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found.")
+
+    company_id = job_posting.company_id
+    if company_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Job posting must be linked to an approved company before creating an application.",
+        )
+
+    if await db.get(User, payload.user_id) is None:
+        raise HTTPException(status_code=422, detail="User not found.")
+
+    if payload.contact_id is not None:
+        contact = await db.get(Contact, payload.contact_id)
+        if contact is None:
+            raise HTTPException(status_code=422, detail="Contact not found.")
+        if contact.company_id != company_id:
+            raise HTTPException(status_code=422, detail="Contact does not belong to application company.")
+
+    application = Application(
+        company_id=company_id,
+        user_id=payload.user_id,
+        contact_id=payload.contact_id,
+        type=payload.type,
+        status=payload.status,
+        next_action=payload.next_action,
+        next_action_due=payload.next_action_due,
+        notes=_job_application_notes(job_posting, payload.notes),
+    )
+    db.add(application)
+    await db.commit()
+    await db.refresh(application)
+    return application
 
 
 @discovery_router.get("", response_model=list[DiscoveryCandidateRead])
@@ -166,3 +250,10 @@ async def _link_detected_job_posting(
     job_posting = result.first()
     if job_posting is not None and job_posting.company_id is None:
         job_posting.company_id = company.id
+
+
+def _job_application_notes(job_posting: JobPosting, notes: str | None) -> str:
+    job_context = f"Job posting: {job_posting.title}\nURL: {job_posting.url}"
+    if notes:
+        return f"{notes}\n\n{job_context}"
+    return job_context

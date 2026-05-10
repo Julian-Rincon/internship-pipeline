@@ -67,7 +67,15 @@ function CandidateTable({
                   <td>{candidate.source}</td>
                   <td>{candidate.detected_job_title ?? "-"}</td>
                   <td>
-                    <CandidateLink href={candidate.detected_job_url} label="Job" />
+                    {candidate.detected_job_url ? (
+                      <>
+                        <CandidateLink href={candidate.detected_job_url} label="Job" />
+                        <br />
+                        <Link href="/job-postings">Job postings</Link>
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                   <td>
                     <CandidateLink href={candidate.careers_url} label="Careers" />
