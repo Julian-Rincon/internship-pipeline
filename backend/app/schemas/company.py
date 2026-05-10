@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field
 CompanyTier = Literal["A", "B", "C"]
 VisaFriendly = Literal["green", "yellow", "red", "unknown"]
 CompanyStatus = Literal["active", "paused", "rejected", "won"]
+OwnershipStatus = Literal["unclaimed", "claimed", "paused", "done"]
+OwnedCompanyStatus = Literal["claimed", "paused", "done"]
 
 
 class CompanyBase(BaseModel):
@@ -37,9 +39,22 @@ class CompanyUpdate(BaseModel):
     status: CompanyStatus | None = None
 
 
+class CompanyClaim(BaseModel):
+    user_id: UUID
+    ownership_notes: str | None = None
+
+
+class CompanyOwnershipUpdate(BaseModel):
+    ownership_status: OwnedCompanyStatus | None = None
+    ownership_notes: str | None = None
+
+
 class CompanyRead(CompanyBase):
     id: UUID
+    owner_user_id: UUID | None
+    ownership_status: OwnershipStatus
+    claimed_at: datetime | None
+    ownership_notes: str | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

@@ -59,6 +59,14 @@ Candidates must be reviewed before they affect the official companies list. Appr
 
 Future ATS discovery should stay behind this pending-review layer, use conservative allowlists and avoid aggressive crawling or anti-bot bypasses.
 
+## Company Claiming Development
+
+Company claiming is a manual coordination feature. Use `/companies/{id}` to select a user, add optional notes and claim a company. Claimed companies can be released, or moved between `claimed`, `paused` and `done`.
+
+There is no authentication or permissions layer yet. The selected owner is a normal existing user chosen from a dropdown, so this should be treated as a team planning field rather than an access-control mechanism.
+
+Release resets the company to `unclaimed` and clears `owner_user_id`, `claimed_at` and `ownership_notes`.
+
 ## Useful Logs
 
 ```powershell

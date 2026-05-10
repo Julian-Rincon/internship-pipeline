@@ -34,6 +34,23 @@ export default async function DashboardPage() {
       </div>
 
       <div className="panel" style={{ marginTop: 16 }}>
+        <h2>Company ownership</h2>
+        {!summaryResult.ok ? (
+          <p className="notice error">Could not load summary: {summaryResult.error}</p>
+        ) : null}
+        <div className="status-list">
+          <span className="badge badge-unclaimed">unclaimed: {summary.unclaimed_companies}</span>
+          <span className="badge badge-claimed">claimed: {summary.claimed_companies}</span>
+          <span className="badge badge-paused">paused: {summary.paused_companies}</span>
+          <span className="badge badge-done">done: {summary.done_companies}</span>
+        </div>
+        <p className="muted">
+          Manual ownership helps the team avoid duplicate effort before adding authentication or automation.
+        </p>
+        <Link href="/companies">View companies</Link>
+      </div>
+
+      <div className="panel" style={{ marginTop: 16 }}>
         <h2>Pipeline status</h2>
         {!summaryResult.ok ? (
           <p className="notice error">Could not load summary: {summaryResult.error}</p>

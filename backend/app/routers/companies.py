@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -9,8 +10,9 @@ from app.db import get_db
 from app.models.application import Application
 from app.models.company import Company
 from app.models.contact import Contact
+from app.models.user import User
 from app.schemas.application import ApplicationRead
-from app.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
+from app.schemas.company import CompanyClaim, CompanyCreate, CompanyOwnershipUpdate, CompanyRead, CompanyUpdate
 from app.schemas.contact import ContactRead
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -99,6 +101,92 @@ async def update_company(
             detail="A company with that domain already exists.",
         ) from exc
 
+    await db.refresh(company)
+    return company
+
+
+@router.post("/{company_id}/claim", response_model=CompanyRead)
+async def claim_company(
+    company_id: UUID,
+    payload: CompanyClaim,
+    db: AsyncSession = Depends(get_db),
+) -> Company:
+    company = await db.get(Company, company_id)
+    if company is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
+
+    if await db.get(User, payload.user_id) is None:
+        raise HTTPException(status_code=422, detail="User not found.")
+
+    if company.owner_user_id is not None and company.owner_user_id != payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Company is already claimed by another user.",
+        )
+
+    if company.owner_user_id == payload.user_id:
+        company.ownership_status = "claimed"
+        if payload.ownership_notes is not None:
+            company.ownership_notes = payload.ownership_notes
+        if company.claimed_at is None:
+            company.claimed_at = datetime.now(UTC)
+    else:
+        company.owner_user_id = payload.user_id
+        company.ownership_status = "claimed"
+        company.claimed_at = datetime.now(UTC)
+        if payload.ownership_notes is not None:
+            company.ownership_notes = payload.ownership_notes
+
+    await db.commit()
+    await db.refresh(company)
+    return company
+
+
+@router.post("/{company_id}/release", response_model=CompanyRead)
+async def release_company(company_id: UUID, db: AsyncSession = Depends(get_db)) -> Company:
+    company = await db.get(Company, company_id)
+    if company is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
+
+    company.owner_user_id = None
+    company.ownership_status = "unclaimed"
+    company.claimed_at = None
+    company.ownership_notes = None
+
+    await db.commit()
+    await db.refresh(company)
+    return company
+
+
+@router.patch("/{company_id}/ownership", response_model=CompanyRead)
+async def update_company_ownership(
+    company_id: UUID,
+    payload: CompanyOwnershipUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> Company:
+    company = await db.get(Company, company_id)
+    if company is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found.")
+
+    values = payload.model_dump(exclude_unset=True)
+    next_status = values.get("ownership_status", company.ownership_status)
+
+    if next_status == "claimed" and company.owner_user_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Cannot mark company as claimed without an owner.",
+        )
+
+    if next_status in {"paused", "done"} and company.owner_user_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Cannot update ownership status without an owner.",
+        )
+
+    for field, value in values.items():
+        setattr(company, field, value)
+
+    await db.commit()
     await db.refresh(company)
     return company
 

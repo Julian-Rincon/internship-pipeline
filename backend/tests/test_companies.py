@@ -4,6 +4,28 @@ import pytest
 from httpx import AsyncClient
 
 
+async def create_test_company(client: AsyncClient) -> dict:
+    response = await client.post(
+        "/companies",
+        json={"name": "Ownership Test Company", "domain": f"ownership-company-{uuid4().hex}.test"},
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+async def create_test_user(client: AsyncClient) -> dict:
+    response = await client.post(
+        "/users",
+        json={
+            "name": "Ownership Test User",
+            "email": f"ownership-user-{uuid4().hex}@example.com",
+            "role": "member",
+            "profile_status": "incomplete",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
 
 @pytest.mark.asyncio
 async def test_health(client: AsyncClient):
@@ -103,3 +125,128 @@ async def test_invalid_tier_is_rejected(client: AsyncClient):
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_claim_unclaimed_company(client: AsyncClient):
+    company = await create_test_company(client)
+    user = await create_test_user(client)
+
+    response = await client.post(
+        f"/companies/{company['id']}/claim",
+        json={"user_id": user["id"], "ownership_notes": "Manual owner for outreach coordination."},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["owner_user_id"] == user["id"]
+    assert body["ownership_status"] == "claimed"
+    assert body["claimed_at"] is not None
+    assert body["ownership_notes"] == "Manual owner for outreach coordination."
+
+
+@pytest.mark.asyncio
+async def test_claim_with_nonexistent_user_returns_error(client: AsyncClient):
+    company = await create_test_company(client)
+
+    response = await client.post(
+        f"/companies/{company['id']}/claim",
+        json={"user_id": str(uuid4())},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "User not found."
+
+
+@pytest.mark.asyncio
+async def test_claim_already_claimed_by_same_user_is_idempotent(client: AsyncClient):
+    company = await create_test_company(client)
+    user = await create_test_user(client)
+
+    first = await client.post(f"/companies/{company['id']}/claim", json={"user_id": user["id"]})
+    second = await client.post(f"/companies/{company['id']}/claim", json={"user_id": user["id"]})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["owner_user_id"] == user["id"]
+    assert second.json()["ownership_status"] == "claimed"
+    assert second.json()["claimed_at"] == first.json()["claimed_at"]
+
+
+@pytest.mark.asyncio
+async def test_claim_already_claimed_by_another_user_returns_409(client: AsyncClient):
+    company = await create_test_company(client)
+    first_user = await create_test_user(client)
+    second_user = await create_test_user(client)
+
+    await client.post(f"/companies/{company['id']}/claim", json={"user_id": first_user["id"]})
+    response = await client.post(
+        f"/companies/{company['id']}/claim",
+        json={"user_id": second_user["id"]},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Company is already claimed by another user."
+
+
+@pytest.mark.asyncio
+async def test_release_company(client: AsyncClient):
+    company = await create_test_company(client)
+    user = await create_test_user(client)
+    await client.post(
+        f"/companies/{company['id']}/claim",
+        json={"user_id": user["id"], "ownership_notes": "Temporary claim."},
+    )
+
+    response = await client.post(f"/companies/{company['id']}/release")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["owner_user_id"] is None
+    assert body["ownership_status"] == "unclaimed"
+    assert body["claimed_at"] is None
+    assert body["ownership_notes"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_ownership_status_to_paused(client: AsyncClient):
+    company = await create_test_company(client)
+    user = await create_test_user(client)
+    await client.post(f"/companies/{company['id']}/claim", json={"user_id": user["id"]})
+
+    response = await client.patch(
+        f"/companies/{company['id']}/ownership",
+        json={"ownership_status": "paused", "ownership_notes": "Waiting for manual review."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ownership_status"] == "paused"
+    assert response.json()["ownership_notes"] == "Waiting for manual review."
+
+
+@pytest.mark.asyncio
+async def test_update_ownership_status_to_done(client: AsyncClient):
+    company = await create_test_company(client)
+    user = await create_test_user(client)
+    await client.post(f"/companies/{company['id']}/claim", json={"user_id": user["id"]})
+
+    response = await client.patch(
+        f"/companies/{company['id']}/ownership",
+        json={"ownership_status": "done"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ownership_status"] == "done"
+
+
+@pytest.mark.asyncio
+async def test_cannot_set_claimed_without_owner(client: AsyncClient):
+    company = await create_test_company(client)
+
+    response = await client.patch(
+        f"/companies/{company['id']}/ownership",
+        json={"ownership_status": "claimed"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Cannot mark company as claimed without an owner."

@@ -21,12 +21,19 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)) -> Dashboard
     status_rows = await db.execute(
         select(Application.status, func.count()).group_by(Application.status)
     )
+    ownership_rows = await db.execute(
+        select(Company.ownership_status, func.count()).group_by(Company.ownership_status)
+    )
+    ownership_counts = {status: count for status, count in ownership_rows.all()}
 
     return DashboardSummary(
         total_companies=await count_rows(db, Company),
         total_users=await count_rows(db, User),
         total_contacts=await count_rows(db, Contact),
         total_applications=await count_rows(db, Application),
+        unclaimed_companies=ownership_counts.get("unclaimed", 0),
+        claimed_companies=ownership_counts.get("claimed", 0),
+        paused_companies=ownership_counts.get("paused", 0),
+        done_companies=ownership_counts.get("done", 0),
         applications_by_status={status: count for status, count in status_rows.all()},
     )
-

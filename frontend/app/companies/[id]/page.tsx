@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OwnershipPanel } from "./ownership-panel";
 import {
   getCompany,
   getCompanyApplications,
@@ -28,6 +29,7 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
   const contacts = contactsResult.data;
   const applications = applicationsResult.data;
   const userById = new Map(usersResult.data.map((user) => [user.id, user]));
+  const owner = company?.owner_user_id ? userById.get(company.owner_user_id) : null;
   const contactById = new Map(contacts.map((contact) => [contact.id, contact]));
 
   if (!company) {
@@ -90,7 +92,25 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
           <span className="muted">Status</span>
           <strong>{company.status}</strong>
         </div>
+        <div>
+          <span className="muted">Owner</span>
+          <strong>{owner?.name ?? "-"}</strong>
+        </div>
+        <div>
+          <span className="muted">Ownership status</span>
+          <strong>{company.ownership_status}</strong>
+        </div>
+        <div>
+          <span className="muted">Claimed at</span>
+          <strong>{value(company.claimed_at)}</strong>
+        </div>
+        <div className="wide-detail">
+          <span className="muted">Ownership notes</span>
+          <strong>{value(company.ownership_notes)}</strong>
+        </div>
       </div>
+
+      <OwnershipPanel company={company} users={usersResult.data} />
 
       <div className="panel table-wrap" style={{ marginTop: 16 }}>
         <h2>Related contacts</h2>

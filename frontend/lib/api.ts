@@ -9,6 +9,10 @@ export type Company = {
   ats_type: string | null;
   visa_friendly_intern: "green" | "yellow" | "red" | "unknown" | null;
   status: "active" | "paused" | "rejected" | "won";
+  owner_user_id: string | null;
+  ownership_status: "unclaimed" | "claimed" | "paused" | "done";
+  claimed_at: string | null;
+  ownership_notes: string | null;
   created_at: string;
 };
 
@@ -22,6 +26,16 @@ export type CompanyPayload = {
   ats_type?: string | null;
   visa_friendly_intern?: "green" | "yellow" | "red" | "unknown" | null;
   status?: "active" | "paused" | "rejected" | "won";
+};
+
+export type CompanyClaimPayload = {
+  user_id: string;
+  ownership_notes?: string | null;
+};
+
+export type CompanyOwnershipPayload = {
+  ownership_status?: "claimed" | "paused" | "done";
+  ownership_notes?: string | null;
 };
 
 export type User = {
@@ -183,6 +197,10 @@ export type DashboardSummary = {
   total_users: number;
   total_contacts: number;
   total_applications: number;
+  unclaimed_companies: number;
+  claimed_companies: number;
+  paused_companies: number;
+  done_companies: number;
   applications_by_status: Record<string, number>;
 };
 
@@ -285,6 +303,56 @@ export async function getCompanyApplications(companyId: string): Promise<ApiResu
 export async function createCompany(payload: CompanyPayload): Promise<Company> {
   const response = await fetch(`${getApiUrl()}/companies`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function claimCompany(companyId: string, payload: CompanyClaimPayload): Promise<Company> {
+  const response = await fetch(`${getApiUrl()}/companies/${companyId}/claim`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function releaseCompany(companyId: string): Promise<Company> {
+  const response = await fetch(`${getApiUrl()}/companies/${companyId}/release`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function updateCompanyOwnership(
+  companyId: string,
+  payload: CompanyOwnershipPayload
+): Promise<Company> {
+  const response = await fetch(`${getApiUrl()}/companies/${companyId}/ownership`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json"
     },
@@ -604,6 +672,10 @@ export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>
         total_users: 0,
         total_contacts: 0,
         total_applications: 0,
+        unclaimed_companies: 0,
+        claimed_companies: 0,
+        paused_companies: 0,
+        done_companies: 0,
         applications_by_status: {}
       },
       error: error instanceof Error ? error.message : "Failed to load dashboard summary"

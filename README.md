@@ -1,6 +1,6 @@
 # Internship Pipeline System
 
-Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates and a dashboard.
+Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates, company ownership and a dashboard.
 
 ## Project Status
 
@@ -27,6 +27,7 @@ Internship Pipeline System centralizes the manual workflow before automation:
 - manual contacts
 - applications linked to companies, users and contacts
 - discovery candidates held in a pending-review layer
+- manual company claiming for team coordination
 - status board and list views
 - dashboard summary for pipeline visibility
 
@@ -42,11 +43,14 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Demo-only company discovery candidates
 - Human approval and rejection for discovery candidates
 - Demo job postings linked to approved companies when possible
+- Company claiming and release for manual team coordination
+- Ownership status tracking: unclaimed, claimed, paused and done
 - Company and user detail pages with related records
 - Client-side search for companies, users and contacts
 - Manual editing of application status, next action, due date and notes
 - Controlled application deletion with confirmation
 - Filters by status, user, company and type
+- Company ownership filters and dashboard ownership counts
 - Dashboard summary
 - Backend tests with pytest
 - Alembic migrations
@@ -149,11 +153,20 @@ The `/discovery` page runs a deterministic demo discovery process. It creates fi
 
 Candidates start as `pending_review`. Approving a candidate creates or links a company by domain or normalized company name, marks the candidate as `approved`, and links the detected job posting to the company when possible. Rejecting a candidate marks it as `rejected`. No real ATS scraping or external discovery is implemented yet.
 
+## Company Claiming
+
+Companies can be manually claimed by a selected user. The ownership fields are `owner_user_id`, `ownership_status`, `claimed_at` and `ownership_notes`. Claiming is a coordination tool only; there is no authentication or permissions layer yet, so the user is selected manually from the existing users list.
+
+Releasing a company clears the owner, resets the status to `unclaimed`, clears `claimed_at` and clears ownership notes. The dashboard shows simple counts for unclaimed, claimed, paused and done companies.
+
 ## API Overview
 
 - `GET /health`
 - `/companies`
 - `/companies/{id}`
+- `POST /companies/{id}/claim`
+- `POST /companies/{id}/release`
+- `PATCH /companies/{id}/ownership`
 - `/companies/{id}/contacts`
 - `/companies/{id}/applications`
 - `/users`
@@ -178,7 +191,7 @@ Run backend tests:
 docker compose exec backend pytest
 ```
 
-The test suite overrides the FastAPI database dependency and wraps each test in a transaction with rollback. Tests should not leave companies, users, contacts, applications, discovery candidates or job postings visible in the development dashboard.
+The test suite overrides the FastAPI database dependency and wraps each test in a transaction with rollback. Tests should not leave companies, ownership changes, users, contacts, applications, discovery candidates or job postings visible in the development dashboard.
 
 Run frontend build:
 

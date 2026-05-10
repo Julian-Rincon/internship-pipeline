@@ -1,11 +1,11 @@
 import { CompanyForm } from "./company-form";
 import { CompanyList } from "./company-list";
-import { getCompanies } from "../../lib/api";
+import { getCompanies, getUsers } from "../../lib/api";
 
 export const dynamic = "force-dynamic";
 
 export default async function CompaniesPage() {
-  const result = await getCompanies();
+  const [result, usersResult] = await Promise.all([getCompanies(), getUsers()]);
   const companies = result.data;
 
   return (
@@ -16,7 +16,8 @@ export default async function CompaniesPage() {
       <CompanyForm />
 
       {!result.ok ? <p className="notice error">Could not load companies: {result.error}</p> : null}
-      <CompanyList companies={companies} />
+      {!usersResult.ok ? <p className="notice error">Could not load owners: {usersResult.error}</p> : null}
+      <CompanyList companies={companies} users={usersResult.data} />
     </section>
   );
 }
