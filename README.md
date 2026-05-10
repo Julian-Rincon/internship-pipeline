@@ -1,12 +1,12 @@
 # Internship Pipeline System
 
-Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates, company ownership and a dashboard.
+Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates, company ownership, internal reminders and a dashboard.
 
 ## Project Status
 
 MVP manual in development.
 
-The current system is intentionally safe and reviewable: it does not scrape websites, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery is demo-only and creates pending candidates that require human approval before becoming companies.
+The current system is intentionally safe and reviewable: it does not scrape websites, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery is demo-only and creates pending candidates that require human approval before becoming companies. Reminders are internal visibility only and do not send notifications.
 
 ## Problem
 
@@ -28,6 +28,7 @@ Internship Pipeline System centralizes the manual workflow before automation:
 - applications linked to companies, users and contacts
 - discovery candidates held in a pending-review layer
 - manual company claiming for team coordination
+- internal reminders for overdue and upcoming manual actions
 - status board and list views
 - dashboard summary for pipeline visibility
 
@@ -45,12 +46,14 @@ This creates a structured base for future discovery, reminders, matching and ass
 - Demo job postings linked to approved companies when possible
 - Company claiming and release for manual team coordination
 - Ownership status tracking: unclaimed, claimed, paused and done
+- Internal reminders for overdue applications, upcoming actions, pending discovery review and stale company claims
 - Company and user detail pages with related records
 - Client-side search for companies, users and contacts
 - Manual editing of application status, next action, due date and notes
 - Controlled application deletion with confirmation
 - Filters by status, user, company and type
 - Company ownership filters and dashboard ownership counts
+- Dashboard reminder counts
 - Dashboard summary
 - Backend tests with pytest
 - Alembic migrations
@@ -159,6 +162,12 @@ Companies can be manually claimed by a selected user. The ownership fields are `
 
 Releasing a company clears the owner, resets the status to `unclaimed`, clears `claimed_at` and clears ownership notes. The dashboard shows simple counts for unclaimed, claimed, paused and done companies.
 
+## Internal Reminders
+
+The `/reminders` page computes reminders from existing records without creating a reminders table. It shows overdue application actions, actions due today, actions due soon, pending discovery candidates and stale claimed companies.
+
+This is internal visibility only. It does not send emails, create outreach, call external APIs or run n8n workflows. Future notification workflows can build on this layer after review.
+
 ## API Overview
 
 - `GET /health`
@@ -179,6 +188,7 @@ Releasing a company clears the owner, resets the status to `unclaimed`, clears `
 - `POST /discovery-candidates/{id}/approve`
 - `POST /discovery-candidates/{id}/reject`
 - `/job-postings`
+- `GET /reminders`
 - `GET /dashboard/summary`
 
 Each resource supports the current MVP CRUD workflow through the FastAPI backend. Detailed schemas are available in Swagger at http://localhost:8000/docs after the stack is running.

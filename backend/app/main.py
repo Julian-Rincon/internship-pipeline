@@ -7,6 +7,7 @@ from app.routers.companies import router as companies_router
 from app.routers.contacts import router as contacts_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.discovery import discovery_router, job_postings_router
+from app.routers.reminders import router as reminders_router
 from app.routers.users import router as users_router
 
 app = FastAPI(title=settings.app_name)
@@ -31,4 +32,5 @@ app.include_router(contacts_router)
 app.include_router(dashboard_router)
 app.include_router(discovery_router)
 app.include_router(job_postings_router)
+app.include_router(reminders_router)
 app.include_router(users_router)

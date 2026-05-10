@@ -201,7 +201,29 @@ export type DashboardSummary = {
   claimed_companies: number;
   paused_companies: number;
   done_companies: number;
+  overdue_reminders: number;
+  due_today_reminders: number;
+  due_soon_reminders: number;
+  pending_review_reminders: number;
   applications_by_status: Record<string, number>;
+};
+
+export type Reminder = {
+  id: string;
+  type:
+    | "application_overdue"
+    | "application_due_today"
+    | "application_due_soon"
+    | "discovery_pending_review"
+    | "claimed_company_stale";
+  severity: "low" | "medium" | "high";
+  title: string;
+  description: string;
+  related_entity_type: "application" | "discovery_candidate" | "company";
+  related_entity_id: string;
+  due_date: string | null;
+  created_reference_date: string;
+  metadata: Record<string, unknown>;
 };
 
 export type ApiResult<T> =
@@ -652,6 +674,27 @@ export async function rejectDiscoveryCandidate(candidateId: string): Promise<Dis
   return response.json();
 }
 
+export async function getReminders(daysAhead = 7): Promise<ApiResult<Reminder[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/reminders?days_ahead=${daysAhead}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch reminders", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load reminders"
+    };
+  }
+}
+
 export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>> {
   try {
     const response = await fetch(`${getApiUrl()}/dashboard/summary`, {
@@ -676,6 +719,10 @@ export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>
         claimed_companies: 0,
         paused_companies: 0,
         done_companies: 0,
+        overdue_reminders: 0,
+        due_today_reminders: 0,
+        due_soon_reminders: 0,
+        pending_review_reminders: 0,
         applications_by_status: {}
       },
       error: error instanceof Error ? error.message : "Failed to load dashboard summary"

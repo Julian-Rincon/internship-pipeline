@@ -34,6 +34,22 @@ export default async function DashboardPage() {
       </div>
 
       <div className="panel" style={{ marginTop: 16 }}>
+        <h2>Reminders</h2>
+        <div className="status-list">
+          <span className="badge badge-high">overdue: {summary.overdue_reminders}</span>
+          <span className="badge badge-medium">due today: {summary.due_today_reminders}</span>
+          <span className="badge badge-low">due soon: {summary.due_soon_reminders}</span>
+          <span className="badge badge-pending_review">
+            pending review: {summary.pending_review_reminders}
+          </span>
+        </div>
+        <p className="muted">
+          Internal visibility for manual actions only. No emails or outreach are sent.
+        </p>
+        <Link href="/reminders">View reminders</Link>
+      </div>
+
+      <div className="panel" style={{ marginTop: 16 }}>
         <h2>Company ownership</h2>
         {!summaryResult.ok ? (
           <p className="notice error">Could not load summary: {summaryResult.error}</p>

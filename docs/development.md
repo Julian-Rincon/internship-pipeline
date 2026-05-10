@@ -67,6 +67,14 @@ There is no authentication or permissions layer yet. The selected owner is a nor
 
 Release resets the company to `unclaimed` and clears `owner_user_id`, `claimed_at` and `ownership_notes`.
 
+## Reminders Development
+
+Reminders are computed from existing records at `GET /reminders`. Query parameters include `days_ahead` with a default of 7, `include_resolved` with a default of false, and optional `user_id` filtering for application and claimed-company reminders.
+
+The current reminder types are overdue application actions, application actions due today, application actions due soon, pending discovery review and stale claimed companies. This layer only provides internal visibility in the backend and frontend. It does not send email, perform outreach, call external APIs or create n8n workflows.
+
+Future n8n notification workflows are planned as a separate step, after the internal reminder contract is stable.
+
 ## Useful Logs
 
 ```powershell

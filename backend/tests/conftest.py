@@ -20,6 +20,7 @@ async def client():
     try:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://testserver") as test_client:
+            test_client.db_session = session
             yield test_client
     finally:
         await session.close()
@@ -28,4 +29,3 @@ async def client():
             await transaction.rollback()
         await connection.close()
         await engine.dispose()
-

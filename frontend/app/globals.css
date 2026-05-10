@@ -226,6 +226,21 @@ button:disabled {
   color: #166534;
 }
 
+.badge-high {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.badge-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-low {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .status-list {
   display: flex;
   flex-wrap: wrap;
