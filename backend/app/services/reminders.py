@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.application import Application
 from app.models.company import Company
 from app.models.discovery_candidate import DiscoveryCandidate
-from app.schemas.reminder import ReminderRead
+from app.schemas.reminder import ReminderRead, ReminderSummaryRead
 
 IGNORED_APPLICATION_STATUSES = {"offer", "rejected", "paused"}
 STALE_CLAIM_DAYS = 14
@@ -38,6 +38,35 @@ async def compute_reminders(
             reminder.due_date or reminder.created_reference_date,
             reminder.title,
         ),
+    )
+
+
+async def compute_n8n_reminder_summary(
+    db: AsyncSession,
+    *,
+    days_ahead: int = 7,
+    include_resolved: bool = False,
+    user_id: UUID | None = None,
+) -> ReminderSummaryRead:
+    reminders = await compute_reminders(
+        db,
+        days_ahead=days_ahead,
+        include_resolved=include_resolved,
+        user_id=user_id,
+    )
+
+    return ReminderSummaryRead(
+        total_reminders=len(reminders),
+        high_count=sum(1 for reminder in reminders if reminder.severity == "high"),
+        medium_count=sum(1 for reminder in reminders if reminder.severity == "medium"),
+        low_count=sum(1 for reminder in reminders if reminder.severity == "low"),
+        overdue_count=sum(1 for reminder in reminders if reminder.type == "application_overdue"),
+        due_today_count=sum(1 for reminder in reminders if reminder.type == "application_due_today"),
+        due_soon_count=sum(1 for reminder in reminders if reminder.type == "application_due_soon"),
+        pending_review_count=sum(
+            1 for reminder in reminders if reminder.type == "discovery_pending_review"
+        ),
+        top_items=reminders[:10],
     )
 
 

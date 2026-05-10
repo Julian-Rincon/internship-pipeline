@@ -178,3 +178,29 @@ async def test_dashboard_summary_includes_reminder_counts(client: AsyncClient):
     assert "due_today_reminders" in summary
     assert "due_soon_reminders" in summary
     assert "pending_review_reminders" in summary
+
+
+@pytest.mark.asyncio
+async def test_n8n_reminder_summary_returns_compact_payload(client: AsyncClient):
+    due_date = datetime.now(UTC).date() - timedelta(days=1)
+    await create_application_with_due_date(client, due_date)
+
+    response = await client.get("/reminders/n8n-summary")
+
+    assert response.status_code == 200
+    summary = response.json()
+    assert summary["total_reminders"] >= 1
+    assert summary["high_count"] >= 1
+    assert summary["overdue_count"] >= 1
+    assert len(summary["top_items"]) <= 10
+    assert {
+        "total_reminders",
+        "high_count",
+        "medium_count",
+        "low_count",
+        "overdue_count",
+        "due_today_count",
+        "due_soon_count",
+        "pending_review_count",
+        "top_items",
+    }.issubset(summary.keys())

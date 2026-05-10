@@ -75,6 +75,14 @@ The current reminder types are overdue application actions, application actions 
 
 Future n8n notification workflows are planned as a separate step, after the internal reminder contract is stable.
 
+## n8n Internal Reminders Demo
+
+Open n8n locally at http://localhost:5678 and import `n8n/workflows/internal-reminders-demo.json` from the workflows import UI.
+
+The workflow uses the Docker-network backend URL `http://backend:8000/reminders/n8n-summary`. This URL works from the n8n container. From your browser or host terminal, use `http://localhost:8000/reminders/n8n-summary`.
+
+The included workflow is manual and inactive by default. It only fetches the backend summary and formats a local output message inside n8n. It does not send email, outreach, Slack, Discord or external webhooks, and it contains no credentials. A future workflow can connect internal Slack or Discord only after manual configuration and review.
+
 ## Useful Logs
 
 ```powershell

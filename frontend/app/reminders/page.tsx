@@ -25,6 +25,17 @@ export default async function RemindersPage() {
       {!result.ok ? <p className="notice error">Could not load reminders: {result.error}</p> : null}
 
       <RemindersList reminders={reminders} />
+
+      <div className="panel" style={{ marginTop: 16 }}>
+        <h2>n8n integration</h2>
+        <p className="muted">
+          n8n can query backend reminders for internal notification workflows. The included demo
+          workflow formats a local summary only; it does not send email, outreach or external webhooks.
+        </p>
+        <p>
+          Workflow export: <code>n8n/workflows/internal-reminders-demo.json</code>
+        </p>
+      </div>
     </section>
   );
 }

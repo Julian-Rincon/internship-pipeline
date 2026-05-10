@@ -168,6 +168,14 @@ The `/reminders` page computes reminders from existing records without creating 
 
 This is internal visibility only. It does not send emails, create outreach, call external APIs or run n8n workflows. Future notification workflows can build on this layer after review.
 
+## n8n Internal Reminders Demo
+
+The repository includes a local demo n8n workflow export at `n8n/workflows/internal-reminders-demo.json`. It manually calls `http://backend:8000/reminders/n8n-summary` from inside the Docker network and formats a reminder summary inside n8n.
+
+The workflow is inactive, local/demo-only and contains no credentials. It does not send emails, outreach, Slack, Discord or external webhooks.
+
+Local-dev limitation: the reminders summary endpoint does not require authentication yet. Keep the workflow local/internal until auth and an approved internal notification channel are added.
+
 ## API Overview
 
 - `GET /health`
@@ -189,6 +197,7 @@ This is internal visibility only. It does not send emails, create outreach, call
 - `POST /discovery-candidates/{id}/reject`
 - `/job-postings`
 - `GET /reminders`
+- `GET /reminders/n8n-summary`
 - `GET /dashboard/summary`
 
 Each resource supports the current MVP CRUD workflow through the FastAPI backend. Detailed schemas are available in Swagger at http://localhost:8000/docs after the stack is running.

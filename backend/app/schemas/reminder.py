@@ -27,3 +27,15 @@ class ReminderRead(BaseModel):
     metadata: dict[str, Any]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReminderSummaryRead(BaseModel):
+    total_reminders: int
+    high_count: int
+    medium_count: int
+    low_count: int
+    overdue_count: int
+    due_today_count: int
+    due_soon_count: int
+    pending_review_count: int
+    top_items: list[ReminderRead]

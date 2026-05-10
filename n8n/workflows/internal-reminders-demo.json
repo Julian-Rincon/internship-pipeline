@@ -1,0 +1,93 @@
+{
+  "name": "Internal Reminders Demo - Local Only",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "4c0b9d7d-8f1e-4f1f-8f3b-5d02a7b5b001",
+      "name": "Manual Trigger - local demo only",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "notesInFlow": true,
+      "notes": "Local demo only. This workflow is started manually and does not send outreach or external notifications."
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/reminders/n8n-summary",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days_ahead",
+              "value": "7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0af4a4d2-bf60-4d3a-93b7-50aa5bc80b01",
+      "name": "Fetch backend reminders - no external APIs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "notesInFlow": true,
+      "notes": "Calls the FastAPI backend over the Docker network at http://backend:8000. No credentials, scraping, email or external webhook is used."
+    },
+    {
+      "parameters": {
+        "jsCode": "const summary = $input.first().json;\nconst topItems = Array.isArray(summary.top_items) ? summary.top_items : [];\nconst lines = [\n  'Internal reminders summary (local demo only)',\n  `Total: ${summary.total_reminders ?? 0}`,\n  `High: ${summary.high_count ?? 0}`,\n  `Medium: ${summary.medium_count ?? 0}`,\n  `Low: ${summary.low_count ?? 0}`,\n  `Overdue: ${summary.overdue_count ?? 0}`,\n  `Due today: ${summary.due_today_count ?? 0}`,\n  `Due soon: ${summary.due_soon_count ?? 0}`,\n  `Pending discovery review: ${summary.pending_review_count ?? 0}`,\n  '',\n  'Top items:'\n];\n\nif (topItems.length === 0) {\n  lines.push('- No reminders returned.');\n} else {\n  for (const reminder of topItems) {\n    lines.push(`- [${reminder.severity}] ${reminder.title}: ${reminder.description}`);\n  }\n}\n\nreturn [\n  {\n    json: {\n      formatted_message: lines.join('\\n'),\n      safe_output_only: true,\n      no_external_notification_sent: true,\n      source: 'http://backend:8000/reminders/n8n-summary'\n    }\n  }\n];"
+      },
+      "id": "9ec66e50-9847-42ad-ae9d-ae0f5bc37e55",
+      "name": "Format internal summary - no send step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        0
+      ],
+      "notesInFlow": true,
+      "notes": "Formats a message for inspection inside n8n only. Future internal Slack or Discord notifications require explicit manual configuration and should remain internal."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger - local demo only": {
+      "main": [
+        [
+          {
+            "node": "Fetch backend reminders - no external APIs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch backend reminders - no external APIs": {
+      "main": [
+        [
+          {
+            "node": "Format internal summary - no send step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "local-demo-internal-reminders",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "description": "Local demo workflow for internal reminder visibility. It does not send emails, outreach, Slack, Discord or external webhooks."
+  },
+  "tags": []
+}
