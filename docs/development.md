@@ -97,6 +97,20 @@ The workflow uses the Docker-network backend URL `http://backend:8000/reminders/
 
 The included workflow is manual and inactive by default. It only fetches the backend summary and formats a local output message inside n8n. It does not send email, outreach, Slack, Discord or external webhooks, and it contains no credentials. A future workflow can connect internal Slack or Discord only after manual configuration and review.
 
+## Operational Checklist
+
+- Add team members in `/users`.
+- Ask each member to complete their profile fields.
+- Register public ATS sources in `/discovery/sources`.
+- Run sources and review the run summaries.
+- Review all pending candidates in `/discovery`.
+- Approve or reject candidates manually.
+- Claim companies from company detail pages.
+- Create applications in `/applications`.
+- Keep next action and due dates updated.
+- Check `/reminders` regularly.
+- Keep outreach/contacting manual and human-reviewed.
+
 ## Useful Logs
 
 ```powershell

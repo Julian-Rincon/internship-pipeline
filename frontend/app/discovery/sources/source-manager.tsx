@@ -13,6 +13,16 @@ import {
 } from "../../../lib/api";
 
 const sourceTypes: DiscoverySource["source_type"][] = ["greenhouse", "lever", "ashby"];
+const sourceKeyHelp: Record<DiscoverySource["source_type"], string> = {
+  greenhouse: "Greenhouse board token, for example: exampleboard",
+  lever: "Lever site, for example: example-company",
+  ashby: "Ashby job board name, for example: example-company"
+};
+const sourceKeyPlaceholders: Record<DiscoverySource["source_type"], string> = {
+  greenhouse: "exampleboard",
+  lever: "example-company",
+  ashby: "example-company"
+};
 
 function nullableValue(formData: FormData, name: string) {
   const value = formData.get(name)?.toString().trim();
@@ -38,6 +48,7 @@ export function SourceManager({ sources }: { sources: DiscoverySource[] }) {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<DiscoverySourceRunResult[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sourceType, setSourceType] = useState<DiscoverySource["source_type"]>("greenhouse");
 
   async function onCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,7 +134,11 @@ export function SourceManager({ sources }: { sources: DiscoverySource[] }) {
             </label>
             <label>
               Type
-              <select name="source_type" defaultValue="greenhouse">
+              <select
+                name="source_type"
+                value={sourceType}
+                onChange={(event) => setSourceType(event.target.value as DiscoverySource["source_type"])}
+              >
                 {sourceTypes.map((sourceType) => (
                   <option key={sourceType} value={sourceType}>
                     {sourceType}
@@ -133,7 +148,8 @@ export function SourceManager({ sources }: { sources: DiscoverySource[] }) {
             </label>
             <label>
               Source key
-              <input name="source_key" required placeholder="board token, Lever site or Ashby board name" />
+              <input name="source_key" required placeholder={sourceKeyPlaceholders[sourceType]} />
+              <span className="muted">{sourceKeyHelp[sourceType]}</span>
             </label>
             <label>
               Company hint

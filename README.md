@@ -152,6 +152,15 @@ Local URLs:
 - Swagger: http://localhost:8000/docs
 - n8n: http://localhost:5678
 
+## Using With A Team
+
+Start by adding team members in `/users`, completing profiles, registering controlled ATS sources in `/discovery/sources`, reviewing candidates in `/discovery`, claiming companies from company detail pages and tracking applications manually.
+
+See:
+
+- [Team onboarding](docs/team-onboarding.md)
+- [ATS source examples](docs/ats-source-examples.md)
+
 ## Discovery MVP
 
 The `/discovery` page runs a deterministic demo discovery process. It creates fictional `DiscoveryCandidate` records and optional demo `JobPosting` records using `.demo.example` URLs only.
