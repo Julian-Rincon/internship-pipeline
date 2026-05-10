@@ -1,0 +1,59 @@
+import Link from "next/link";
+import { getDashboardSummary } from "../lib/api";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const summaryResult = await getDashboardSummary();
+  const summary = summaryResult.data;
+
+  return (
+    <section>
+      <h1>Dashboard</h1>
+      <p className="muted">
+        Base operativa para registrar empresas target y validar el pipeline manualmente.
+      </p>
+
+      <div className="grid">
+        <div className="panel metric">
+          <div className="muted">Companies</div>
+          <div className="metric-value">{summary.total_companies}</div>
+        </div>
+        <div className="panel metric">
+          <div className="muted">Users</div>
+          <div className="metric-value">{summary.total_users}</div>
+        </div>
+        <div className="panel metric">
+          <div className="muted">Contacts</div>
+          <div className="metric-value">{summary.total_contacts}</div>
+        </div>
+        <div className="panel metric">
+          <div className="muted">Applications</div>
+          <div className="metric-value">{summary.total_applications}</div>
+        </div>
+      </div>
+
+      <div className="panel" style={{ marginTop: 16 }}>
+        <h2>Pipeline status</h2>
+        {!summaryResult.ok ? (
+          <p className="notice error">Could not load summary: {summaryResult.error}</p>
+        ) : null}
+        {summary.total_applications === 0 ? (
+          <p className="muted">No applications yet.</p>
+        ) : (
+          <div className="status-list">
+            {Object.entries(summary.applications_by_status).map(([status, count]) => (
+              <span className="badge badge-in_progress" key={status}>
+                {status}: {count}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="muted">
+          Track applications manually before adding automation, matching, scraping or outreach.
+        </p>
+        <Link href="/applications">View applications</Link>
+      </div>
+    </section>
+  );
+}
