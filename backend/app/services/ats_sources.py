@@ -71,6 +71,32 @@ async def run_discovery_source(db: AsyncSession, source: DiscoverySource) -> Dis
     if not source.enabled:
         raise ValueError("Discovery source is disabled.")
 
+    if source.source_type == "getonboard":
+        from app.discovery.runners.getonboard_runner import run_getonboard_discovery
+
+        now = datetime.now(UTC)
+        try:
+            created = await run_getonboard_discovery(db)
+            source.last_status = "success"
+            source.last_error = None
+        except Exception as exc:
+            created = 0
+            source.last_status = "error"
+            source.last_error = str(exc)
+        source.last_run_at = now
+        await db.commit()
+        await db.refresh(source)
+        return DiscoverySourceRunResult(
+            source_id=source.id,
+            source_name=source.name,
+            fetched_count=created,
+            internship_like_count=created,
+            candidates_created=created,
+            candidates_skipped=0,
+            job_postings_created=0,
+            errors=[source.last_error] if source.last_error else [],
+        )
+
     source_url = build_source_url(source)
     now = datetime.now(UTC)
     errors: list[str] = []
