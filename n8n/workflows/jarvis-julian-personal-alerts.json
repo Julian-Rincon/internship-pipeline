@@ -127,29 +127,29 @@
     },
     {
       "parameters": {
-        "operation": "sendMessage",
-        "chatId": "8352014583",
-        "text": "={{ $json.message }}",
-        "additionalFields": {
-          "parse_mode": "Markdown",
-          "disable_web_page_preview": true
-        }
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.JARVIS_TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "values": [
+            {"name": "chat_id", "value": "={{ $env.TELEGRAM_CHAT_ID }}"},
+            {"name": "text", "value": "={{ $json.message }}"},
+            {"name": "parse_mode", "value": "Markdown"},
+            {"name": "disable_web_page_preview", "value": true}
+          ]
+        },
+        "options": {}
       },
       "id": "send-to-jarvis",
       "name": "Send to Julian via JARVIS bot",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1060,
         0
       ],
-      "credentials": {
-        "telegramApi": {
-          "id": "jarvis-telegram-bot",
-          "name": "JARVIS Bot"
-        }
-      },
-      "notes": "Sends to Julian's Telegram (chat_id: 8352014583) via JARVIS bot. Configure credentials: JARVIS Bot Token in n8n Credentials."
+      "notes": "Calls Telegram Bot API directly using JARVIS_TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from .env. No credential setup needed in n8n UI — plug and play."
     }
   ],
   "connections": {
