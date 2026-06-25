@@ -1,5 +1,5 @@
 {
-  "name": "JARVIS — Julian Personal Pipeline Alerts",
+  "name": "JARVIS \u2014 Julian Personal Pipeline Alerts",
   "nodes": [
     {
       "parameters": {
@@ -16,7 +16,10 @@
       "name": "Mon-Fri 8am, 12pm, 6pm",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "notes": "Runs 3x/day on weekdays. Julian gets pipeline status before team sees it."
     },
     {
@@ -25,8 +28,14 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "days_ahead", "value": "7" },
-            { "name": "user_id", "value": "4fafd6de-9301-49b1-a7df-7ed6b01e3231" }
+            {
+              "name": "days_ahead",
+              "value": "7"
+            },
+            {
+              "name": "user_id",
+              "value": "4fafd6de-9301-49b1-a7df-7ed6b01e3231"
+            }
           ]
         },
         "options": {}
@@ -35,7 +44,10 @@
       "name": "Fetch Julian reminders",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [260, 0],
+      "position": [
+        260,
+        0
+      ],
       "notes": "Reminders filtered by Julian's user_id. Only his applications and claimed companies."
     },
     {
@@ -44,8 +56,14 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "status", "value": "pending_review" },
-            { "name": "limit", "value": "100" }
+            {
+              "name": "status",
+              "value": "pending_review"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
           ]
         },
         "options": {}
@@ -54,30 +72,43 @@
       "name": "Fetch new discovery candidates",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [260, 200],
+      "position": [
+        260,
+        200
+      ],
       "notes": "Gets all pending candidates. Julian filters by ML/AI profile keywords."
     },
     {
       "parameters": {
-        "jsCode": "const reminders = $('Fetch Julian reminders').first().json;\nconst allCandidates = $('Fetch new discovery candidates').all().map(i => i.json);\n\n// Julian's ML/AI keyword filter\nconst ML_KEYWORDS = [\n  'ml', 'machine learning', 'data engineering', 'data science', 'ai ', 'artificial intelligence',\n  'nlp', 'llm', 'mlops', 'deep learning', 'data infrastructure', 'analytics engineer',\n  'platform engineer', 'backend engineer', 'software engineer intern', 'data intern',\n  'python', 'pytorch', 'spark', 'pyspark', 'aws'\n];\n\nconst matchesMlProfile = (c) => {\n  const text = `${c.detected_job_title || ''} ${c.company_name || ''}`.toLowerCase();\n  return ML_KEYWORDS.some(kw => text.includes(kw));\n};\n\nconst mlCandidates = allCandidates.filter(matchesMlProfile);\n\n// Build message\nconst now = new Date();\nconst hour = now.getHours();\nconst greeting = hour < 12 ? '☀️ Buenos días' : hour < 18 ? '🌤 Buenas tardes' : '🌙 Buenas noches';\n\nlet msg = `${greeting}, Julian.\\n`;\nmsg += `🤖 *JARVIS — Pipeline Report*\\n`;\nmsg += `📅 ${now.toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'})}\\n\\n`;\n\n// Application reminders\nconst appReminders = Array.isArray(reminders.top_items)\n  ? reminders.top_items.filter(r => r.related_entity_type === 'application')\n  : [];\n\nif (appReminders.length > 0) {\n  msg += `📋 *Tus aplicaciones con acción pendiente:*\\n`;\n  for (const r of appReminders.slice(0, 5)) {\n    const icon = r.severity === 'high' ? '🔴' : r.severity === 'medium' ? '🟡' : '🟢';\n    msg += `${icon} ${r.description}\\n`;\n  }\n  msg += '\\n';\n} else {\n  msg += `✅ Sin acciones pendientes en tus aplicaciones.\\n\\n`;\n}\n\n// ML/AI matching candidates\nif (mlCandidates.length > 0) {\n  msg += `🎯 *${mlCandidates.length} candidatos ML/AI disponibles para revisar:*\\n`;\n  for (const c of mlCandidates.slice(0, 8)) {\n    const score = c.confidence_score || 0;\n    const icon = score >= 0.7 ? '🟢' : score >= 0.5 ? '🟡' : '🔴';\n    const title = c.detected_job_title || 'Posición';\n    const company = c.company_name || 'Empresa';\n    const url = c.detected_job_url ? `\\n   [Ver oferta](${c.detected_job_url})` : '';\n    msg += `${icon} *${company}*: ${title}${url}\\n`;\n  }\n  if (mlCandidates.length > 8) {\n    msg += `_...${mlCandidates.length - 8} más en el dashboard_\\n`;\n  }\n  msg += `\\n👉 [Revisar candidatos](http://localhost:3001/discovery)`;\n} else {\n  msg += `🔍 Sin nuevos candidatos ML/AI hoy.\\n`;\n  msg += `👉 [Ver dashboard](http://localhost:3001)`;\n}\n\nconst hasAnything = appReminders.length > 0 || mlCandidates.length > 0;\n\nreturn [{\n  json: {\n    message: msg,\n    should_notify: hasAnything,\n    ml_candidates_count: mlCandidates.length,\n    app_reminders_count: appReminders.length,\n    total_pending: allCandidates.length\n  }\n}];"
+        "jsCode": "const reminders = $('Fetch Julian reminders').first().json;\nconst allCandidates = $('Fetch new discovery candidates').all().map(i => i.json);\n\n// \u2500\u2500 Julian's matching config (from profile) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst TARGET_KEYWORDS = [\n  'data science', 'machine learning', 'ml engineer', 'data engineer',\n  'ai engineer', 'data pipeline', 'aws', 'pyspark', 'python',\n  'internship', 'practicante', 'trainee', 'junior', 'nlp', 'llm',\n  'mlops', 'deep learning', 'analytics engineer', 'data intern',\n  'software engineer intern', 'platform engineer', 'pytorch', 'spark'\n];\n\nconst EXCLUDE_KEYWORDS = [\n  'senior', 'lead', 'manager', 'full-time only',\n  'java only', 'php', '.net', 'frontend only', 'ios', 'android'\n];\n\nconst PREFERRED_STACK = [\n  'python', 'aws', 'pytorch', 'pyspark', 'fastapi',\n  'postgresql', 'terraform', 'docker', 'scikit-learn', 'xgboost'\n];\n\nconst EXCLUDED_COMPANIES = ['tritone analytics'];\nconst MIN_SCORE = 65;\n\n// \u2500\u2500 Oracle GenO deadline awareness \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst ORACLE_ASSESSMENT = new Date('2026-07-24');\nconst ORACLE_RESULTS    = new Date('2026-07-31');\nconst now = new Date();\nconst daysToAssessment = Math.ceil((ORACLE_ASSESSMENT - now) / 86400000);\nconst daysToResults    = Math.ceil((ORACLE_RESULTS - now) / 86400000);\n\n// \u2500\u2500 Candidate scoring \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst scoreCandidate = (c) => {\n  const text  = `${c.detected_job_title || ''} ${c.company_name || ''}`.toLowerCase();\n  const comp  = (c.company_name || '').toLowerCase();\n\n  if (EXCLUDED_COMPANIES.some(x => comp.includes(x))) return -1;\n  if (EXCLUDE_KEYWORDS.some(kw => text.includes(kw))) return -1;\n  if (!TARGET_KEYWORDS.some(kw => text.includes(kw))) return 0;\n\n  let score = 50;\n  score += PREFERRED_STACK.filter(s => text.includes(s)).length * 10;\n  score += (c.confidence_score || 0) * 20;\n  return Math.min(score, 100);\n};\n\nconst scoredCandidates = allCandidates\n  .map(c => ({ ...c, _score: scoreCandidate(c) }))\n  .filter(c => c._score >= MIN_SCORE)\n  .sort((a, b) => b._score - a._score);\n\n// \u2500\u2500 Build Telegram message \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst hour = now.getHours();\nconst greeting = hour < 12 ? '\u2600\ufe0f Buenos d\u00edas' : hour < 18 ? '\ud83c\udf24 Buenas tardes' : '\ud83c\udf19 Buenas noches';\n\nlet msg = `${greeting}, Julian.\\n`;\nmsg += `\ud83e\udd16 *JARVIS \u2014 Pipeline Report*\\n`;\nmsg += `\ud83d\udcc5 ${now.toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'})}\\n\\n`;\n\n// Oracle alert\nif (daysToAssessment >= 0 && daysToAssessment <= 7) {\n  msg += `\u26a0\ufe0f *Oracle GenO \u2014 Assessment Center en ${daysToAssessment} d\u00edas* (${ORACLE_ASSESSMENT.toLocaleDateString('es-CO')})\\n`;\n  msg += `\ud83d\udccd Presencial 9AM\u20135PM, Oracle Bogot\u00e1\\n\\n`;\n} else if (daysToResults >= 0 && daysToResults <= 3) {\n  msg += `\ud83d\udcec *Oracle GenO \u2014 Resultados en ${daysToResults} d\u00edas*\\n\\n`;\n}\n\n// Application reminders (only Julian's)\nconst appReminders = Array.isArray(reminders.top_items)\n  ? reminders.top_items.filter(r => r.related_entity_type === 'application')\n  : [];\n\nif (appReminders.length > 0) {\n  msg += `\ud83d\udccb *Aplicaciones con acci\u00f3n pendiente:*\\n`;\n  for (const r of appReminders.slice(0, 5)) {\n    const icon = r.severity === 'high' ? '\ud83d\udd34' : r.severity === 'medium' ? '\ud83d\udfe1' : '\ud83d\udfe2';\n    msg += `${icon} ${r.description}\\n`;\n  }\n  msg += '\\n';\n} else {\n  msg += `\u2705 Sin acciones pendientes en tus aplicaciones.\\n\\n`;\n}\n\n// Matched candidates\nif (scoredCandidates.length > 0) {\n  msg += `\ud83c\udfaf *${scoredCandidates.length} match${scoredCandidates.length > 1 ? 'es' : ''} ML/AI para ti:*\\n`;\n  for (const c of scoredCandidates.slice(0, 8)) {\n    const icon = c._score >= 80 ? '\ud83d\udfe2' : c._score >= 65 ? '\ud83d\udfe1' : '\ud83d\udd35';\n    const title = c.detected_job_title || 'Posici\u00f3n';\n    const company = c.company_name || 'Empresa';\n    const url = c.detected_job_url ? `\\n   [Ver oferta](${c.detected_job_url})` : '';\n    msg += `${icon} *${company}*: ${title} _(score: ${Math.round(c._score)})_${url}\\n`;\n  }\n  if (scoredCandidates.length > 8) {\n    msg += `_...${scoredCandidates.length - 8} m\u00e1s en el dashboard_\\n`;\n  }\n  msg += `\\n\ud83d\udc49 [Revisar candidatos](http://localhost:3001/discovery)`;\n} else {\n  msg += `\ud83d\udd0d Sin nuevos matches ML/AI hoy (score m\u00ednimo: ${MIN_SCORE}).\\n`;\n  msg += `\ud83d\udc49 [Ver dashboard](http://localhost:3001)`;\n}\n\nconst oracleUrgent = daysToAssessment >= 0 && daysToAssessment <= 7;\nconst hasAnything  = appReminders.length > 0 || scoredCandidates.length > 0 || oracleUrgent;\n\nreturn [{\n  json: {\n    message: msg,\n    should_notify: hasAnything,\n    ml_matches_count: scoredCandidates.length,\n    app_reminders_count: appReminders.length,\n    oracle_days_remaining: daysToAssessment,\n    total_candidates_checked: allCandidates.length\n  }\n}];"
       },
       "id": "format-jarvis-message",
       "name": "Format JARVIS personal alert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [540, 100],
-      "notes": "Filters by Julian's ML/AI profile. Sends only if there's something actionable."
+      "position": [
+        540,
+        100
+      ],
+      "notes": "Full matching config: target keywords, exclude keywords, stack scoring, Oracle deadline awareness, min score 65."
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
           "conditions": [
             {
               "id": "check-notify",
               "leftValue": "={{ $json.should_notify }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "true" }
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
             }
           ],
           "combinator": "and"
@@ -88,7 +119,10 @@
       "name": "Only notify if actionable",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [800, 100],
+      "position": [
+        800,
+        100
+      ],
       "notes": "Skips Telegram if nothing new. Avoids notification spam."
     },
     {
@@ -105,7 +139,10 @@
       "name": "Send to Julian via JARVIS bot",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1060, 0],
+      "position": [
+        1060,
+        0
+      ],
       "credentials": {
         "telegramApi": {
           "id": "jarvis-telegram-bot",
@@ -119,31 +156,76 @@
     "Mon-Fri 8am, 12pm, 6pm": {
       "main": [
         [
-          { "node": "Fetch Julian reminders", "type": "main", "index": 0 },
-          { "node": "Fetch new discovery candidates", "type": "main", "index": 0 }
+          {
+            "node": "Fetch Julian reminders",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch new discovery candidates",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "Fetch Julian reminders": {
-      "main": [[{ "node": "Format JARVIS personal alert", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format JARVIS personal alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch new discovery candidates": {
-      "main": [[{ "node": "Format JARVIS personal alert", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format JARVIS personal alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format JARVIS personal alert": {
-      "main": [[{ "node": "Only notify if actionable", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Only notify if actionable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Only notify if actionable": {
       "main": [
-        [{ "node": "Send to Julian via JARVIS bot", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Send to Julian via JARVIS bot",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     }
   },
   "pinData": {},
-  "settings": { "executionOrder": "v1" },
-  "tags": ["jarvis", "julian", "personal", "internship"],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    "jarvis",
+    "julian",
+    "personal",
+    "internship"
+  ],
   "meta": {
-    "description": "Personal pipeline alerts for Julian via JARVIS Telegram bot. Filters ML/AI candidates matching his profile. Runs 3x/day on weekdays. NOT the team digest — this is Julian's private edge."
+    "description": "Personal pipeline alerts for Julian via JARVIS Telegram bot. Filters ML/AI candidates matching his profile. Runs 3x/day on weekdays. NOT the team digest \u2014 this is Julian's private edge."
   }
 }
