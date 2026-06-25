@@ -8,8 +8,13 @@ from app.routers.contacts import router as contacts_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.discovery import discovery_router, job_postings_router
 from app.routers.discovery_sources import router as discovery_sources_router
+from app.routers.interviews import router as interviews_router
+from app.routers.outreach import router as outreach_router
 from app.routers.reminders import router as reminders_router
+from app.routers.tech_matcher import router as tech_matcher_router
+from app.routers.templates import router as templates_router
 from app.routers.users import router as users_router
+from app.routers.visa import router as visa_router
 
 app = FastAPI(title=settings.app_name)
 
@@ -33,6 +38,11 @@ app.include_router(contacts_router)
 app.include_router(dashboard_router)
 app.include_router(discovery_router)
 app.include_router(discovery_sources_router)
+app.include_router(interviews_router)
 app.include_router(job_postings_router)
+app.include_router(outreach_router)
 app.include_router(reminders_router)
+app.include_router(tech_matcher_router)
+app.include_router(templates_router)
 app.include_router(users_router)
+app.include_router(visa_router)

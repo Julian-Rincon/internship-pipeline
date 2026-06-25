@@ -886,6 +886,142 @@ export async function getReminders(daysAhead = 7): Promise<ApiResult<Reminder[]>
   }
 }
 
+export type Interview = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  interview_type: "phone" | "technical" | "system_design" | "behavioral" | "onsite" | "hr";
+  scheduled_at: string | null;
+  interviewer_role: string | null;
+  questions: string[] | null;
+  outcome: "passed" | "failed" | "pending";
+  notes: string | null;
+  created_at: string;
+};
+
+export type InterviewPayload = {
+  company_id: string;
+  user_id: string;
+  interview_type: Interview["interview_type"];
+  scheduled_at?: string | null;
+  interviewer_role?: string | null;
+  questions?: string[] | null;
+  outcome?: Interview["outcome"];
+  notes?: string | null;
+};
+
+export type VisaData = {
+  id: string;
+  company_id: string;
+  country: string;
+  intern_friendly: "green" | "yellow" | "red" | "unknown";
+  visa_type: string | null;
+  sponsor_verified: boolean;
+  evidence_url: string | null;
+  notes: string | null;
+  last_verified: string | null;
+  created_at: string;
+};
+
+export type VisaDataPayload = {
+  company_id: string;
+  country: string;
+  intern_friendly?: VisaData["intern_friendly"];
+  visa_type?: string | null;
+  sponsor_verified?: boolean;
+  evidence_url?: string | null;
+  notes?: string | null;
+  last_verified?: string | null;
+};
+
+export async function getInterviews(filters?: {
+  company_id?: string;
+  user_id?: string;
+  outcome?: string;
+}): Promise<ApiResult<Interview[]>> {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.company_id) params.set("company_id", filters.company_id);
+    if (filters?.user_id) params.set("user_id", filters.user_id);
+    if (filters?.outcome) params.set("outcome", filters.outcome);
+    const query = params.toString();
+    const response = await fetch(`${getApiUrl()}/interviews${query ? `?${query}` : ""}`, {
+      cache: "no-store"
+    });
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch interviews", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load interviews"
+    };
+  }
+}
+
+export async function createInterview(payload: InterviewPayload): Promise<Interview> {
+  const response = await fetch(`${getApiUrl()}/interviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getVisaData(): Promise<ApiResult<VisaData[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/visa`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch visa data", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load visa data"
+    };
+  }
+}
+
+export async function getVisaByCompany(companyId: string): Promise<ApiResult<VisaData[]>> {
+  try {
+    const response = await fetch(`${getApiUrl()}/visa/by-company/${companyId}`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    console.error("Failed to fetch visa data for company", error);
+    return {
+      ok: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to load visa data for company"
+    };
+  }
+}
+
+export async function createVisaData(payload: VisaDataPayload): Promise<VisaData> {
+  const response = await fetch(`${getApiUrl()}/visa`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>> {
   try {
     const response = await fetch(`${getApiUrl()}/dashboard/summary`, {
