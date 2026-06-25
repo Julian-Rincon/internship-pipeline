@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Internship Pipeline",
-  description: "Internal dashboard for internship pipeline coordination"
+  description: "Team dashboard for coordinating international internship applications"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,12 +14,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="shell">
           <header className="topbar">
             <Link href="/">
-              <strong>Internship Pipeline</strong>
+              <strong>⚡ Internship Pipeline</strong>
             </Link>
             <nav className="nav" aria-label="Primary navigation">
               <Link href="/">Dashboard</Link>
               <Link href="/companies">Companies</Link>
-              <Link href="/users">Users</Link>
+              <Link href="/users">Team</Link>
               <Link href="/contacts">Contacts</Link>
               <Link href="/applications">Applications</Link>
               <Link href="/discovery">Discovery</Link>

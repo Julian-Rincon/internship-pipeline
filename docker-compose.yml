@@ -68,6 +68,8 @@ services:
       N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-change-me-local-only}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-replace-with-a-local-random-string}
       DB_SQLITE_POOL_SIZE: 2
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      JARVIS_TELEGRAM_BOT_TOKEN: ${JARVIS_TELEGRAM_BOT_TOKEN:-}
     ports:
       - "${N8N_PORT:-5678}:5678"
     volumes:

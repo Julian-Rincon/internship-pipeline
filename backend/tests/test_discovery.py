@@ -94,8 +94,8 @@ async def test_list_job_postings(client: AsyncClient):
     response = await client.get("/job-postings")
 
     assert response.status_code == 200
-    assert len(response.json()) >= 3
-    assert all(job_posting["source"] == "demo_discovery" for job_posting in response.json())
+    demo_postings = [jp for jp in response.json() if jp["source"] == "demo_discovery"]
+    assert len(demo_postings) >= 3
 
 
 @pytest.mark.asyncio

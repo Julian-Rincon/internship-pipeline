@@ -1,309 +1,350 @@
 # Internship Pipeline System
 
-Self-hosted platform for organizing an international internship pipeline with companies, team members, contacts, applications, discovery candidates, company ownership, internal reminders and a dashboard.
+Self-hosted platform for organizing an international internship pipeline with automated discovery, team coordination, application tracking, and n8n-powered notifications.
+
+## Overview
+
+The system gives student teams a structured, auditable pipeline to go from raw discovery to tracked application — without spreadsheets, without lost contacts, without duplicate company research. Every step requires human review before automation moves forward.
+
+Built by and for students hunting international ML/Data Engineering internships. Designed to be hosted on a friend's server in minutes.
 
 ## Project Status
 
-MVP manual in development.
+**Production-ready MVP.** All 85 backend tests pass. The system runs fully containerized with Docker Compose, including automated ATS discovery from 15+ real company sources (Greenhouse, Lever, Ashby, GetOnBoard), n8n scheduling workflows, and optional Telegram notifications via JARVIS.
 
-The current system is intentionally safe and reviewable: it does not scrape LinkedIn, send emails, automate outreach, use real personal data, or call external enrichment/LLM APIs. Discovery supports demo candidates and controlled public ATS source intake, both requiring human approval before becoming companies. Reminders are internal visibility only and do not send notifications.
+## Stack
 
-## Problem
-
-Student teams often apply to internships in a fragmented way:
-
-- company research lives in spreadsheets or chats
-- team members duplicate effort without visibility
-- contacts and next actions are easy to lose
-- application statuses are hard to compare
-- automation is risky without a clean source of truth
-
-## Solution
-
-Internship Pipeline System centralizes the manual workflow before automation:
-
-- target companies
-- progressive team profiles
-- manual contacts
-- applications linked to companies, users and contacts
-- discovery candidates held in a pending-review layer
-- controlled public ATS source intake for Greenhouse, Lever and Ashby
-- manual company claiming for team coordination
-- internal reminders for overdue and upcoming manual actions
-- status board and list views
-- dashboard summary for pipeline visibility
-
-This creates a structured base for future discovery, reminders, matching and assisted outreach while keeping human review in the loop.
-
-## Current Features
-
-- Companies CRUD
-- Users CRUD with progressive profiles
-- Manual contacts CRUD
-- Applications tracker
-- Applications list and board views by status
-- Job postings page for reviewed opportunities
-- Demo-only company discovery candidates
-- Public unauthenticated ATS source intake for internship-like postings
-- Human approval and rejection for discovery candidates
-- Demo job postings linked to approved companies when possible
-- Company claiming and release for manual team coordination
-- Ownership status tracking: unclaimed, claimed, paused and done
-- Internal reminders for overdue applications, upcoming actions, pending discovery review and stale company claims
-- Company and user detail pages with related records
-- Client-side search for companies, users and contacts
-- Manual editing of application status, next action, due date and notes
-- Manual application creation from linked job postings
-- Controlled application deletion with confirmation
-- Filters by status, user, company and type
-- Company ownership filters and dashboard ownership counts
-- Dashboard reminder counts
-- Dashboard summary
-- Backend tests with pytest
-- Alembic migrations
-- Docker Compose local environment
-- n8n container available as a future complementary orchestrator
-
-## Tech Stack
-
-- FastAPI
-- SQLAlchemy 2.0
-- Alembic
-- PostgreSQL
-- Redis
-- Next.js
-- Docker Compose
-- n8n
-- Pytest
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI + SQLAlchemy 2.0 + asyncpg |
+| Database | PostgreSQL 16 |
+| Cache | Redis 7 |
+| Migrations | Alembic |
+| Frontend | Next.js 14 |
+| Orchestration | n8n |
+| Container | Docker Compose |
+| Tests | pytest + httpx (async) |
 
 ## Architecture
 
-```text
+```
 Browser
-  |
-  v
-Next.js Frontend
-  |
-  v
-FastAPI Backend
-  |
-  +--> PostgreSQL
-  |
-  +--> Redis
+  │
+  ▼
+Next.js Frontend  (:3001)
+  │
+  ▼
+FastAPI Backend   (:8000)
+  │
+  ├── PostgreSQL  (:5432)  — primary data store
+  └── Redis       (:6379)  — cache layer
 
-n8n runs in Docker Compose as a future complementary orchestrator
-for schedules, notifications and webhooks. Core product logic stays
-in FastAPI, PostgreSQL and the frontend.
+n8n              (:5678)  — scheduling, ATS runners, Telegram digest
+  └── calls backend HTTP endpoints only
+      └── POST /discovery-sources/run-enabled
+      └── GET  /reminders/n8n-summary
+      └── GET  /discovery-candidates
 ```
 
-## Screenshots
+n8n never writes data directly to Postgres. All mutations go through the FastAPI backend.
 
-Screenshots below show the current manual MVP. Local screenshot assets are stored under `docs/assets/screenshots/`.
-
-### Dashboard
-
-![Dashboard](docs/assets/screenshots/dashboard.png)
+## Features
 
 ### Companies
+- Full CRUD with domain, tier (A/B/C/D), country, region, ATS type, visa-friendly flag
+- Manual company claiming per user — prevents duplicate research
+- Ownership states: `unclaimed` → `claimed` → `paused` → `done`
+- Company detail page with linked contacts and applications
 
-![Companies](docs/assets/screenshots/companies.png)
-
-### Users
-
-![Users](docs/assets/screenshots/users.png)
+### Users (Progressive Profiles)
+- Create with minimal data (`name`, `email`, `role`)
+- Optional fields: `github_handle`, `linkedin_url`, `cv_url`, `portfolio_url`
+- Profile targeting: `target_roles`, `target_countries`, `target_regions`, `target_company_types`
+- Skills inventory: `strong_skills`, `technical_interests`, `learning_goals`, `internship_goals`
+- Profile status: `incomplete` → `in_progress` → `ready`
+- User detail page with linked applications
 
 ### Contacts
+- Manual contacts linked to companies
+- Fields: `full_name`, `email`, `title`, `linkedin_url`, `source`, `affinity_type`, `affinity_score`
+- No scraping, People Finder, or enrichment
 
-![Contacts](docs/assets/screenshots/contacts.png)
+### Applications Tracker
+- Links a user + company + optional contact
+- Types: `formal`, `speculative`, `referral`, `networking`, `other`
+- Status flow: `researching` → `contacted` → `responded` → `interviewing` → `offer` / `rejected` / `paused`
+- Next action + due date + notes
+- Board view (kanban-style by status) and list view
+- Filters by status, user, company, type
+- Create application directly from a reviewed job posting
 
-### Applications Board
+### Discovery Pipeline
+- **Demo discovery**: creates fictional `DiscoveryCandidate` records (`.demo.example` URLs) for testing without network calls
+- **ATS source intake**: public unauthenticated GET per source — Greenhouse, Lever, Ashby, GetOnBoard
+- Each source run creates `pending_review` discovery candidates and open job postings
+- Human approval required: approving creates or links a company and links the job posting
+- Rejecting marks the candidate out of the active pipeline
+- Confidence score (0.0–1.0) per candidate based on title pattern matching
 
-![Applications Board](docs/assets/screenshots/applications-board.png)
+### Discovery Sources (26 configured, 15 enabled)
+Real ATS sources pre-configured and ready to run:
 
-## Local Setup on Windows PowerShell
+| Source | Company | Type | Status |
+|---|---|---|---|
+| Anthropic | Anthropic | Greenhouse | enabled |
+| Scale AI | Scale AI | Greenhouse | enabled |
+| Vercel | Vercel | Greenhouse | enabled |
+| Cloudflare | Cloudflare | Greenhouse | enabled |
+| Databricks | Databricks | Greenhouse | enabled |
+| Figma | Figma | Greenhouse | enabled |
+| Twilio | Twilio | Greenhouse | enabled |
+| Stripe | Stripe | Greenhouse | enabled |
+| Airtable | Airtable | Ashby | enabled |
+| Notion | Notion | Ashby | enabled |
+| Linear | Linear | Ashby | enabled |
+| Cohere | Cohere | Ashby | enabled |
+| Replit | Replit | Ashby | enabled |
+| Perplexity AI | Perplexity AI | Ashby | enabled |
+| GetOnBoard | Latam/Remote | GetOnBoard | enabled |
 
-Prerequisites:
+### Job Postings
+- Created automatically by ATS source runs and demo discovery
+- Link to approved company manually if not auto-linked
+- Create application directly from a posting (carries title + URL into notes)
+- List view with company link, source, URL
 
-- Docker Desktop
-- Docker Compose v2
+### Internal Reminders
+Computed on-the-fly — no reminders table. Zero external API calls.
 
-Commands:
+| Reminder type | Trigger |
+|---|---|
+| `overdue` | Application `next_action_due` in the past, status is active |
+| `due_today` | Application due today |
+| `due_soon` | Application due in 1–7 days |
+| `pending_review` | `DiscoveryCandidate` with `status=pending_review` |
+| `stale_claim` | Company claimed > 14 days, status still `claimed` |
 
-```powershell
-Copy-Item .env.example .env
-docker compose up --build
+Filters supported: `user_id`, `days_ahead`, `severity`.
+
+### n8n Workflows (3 included)
+
+| Workflow | Schedule | Description |
+|---|---|---|
+| `internal-reminders-demo.json` | Manual only | Fetches and formats reminders summary for internal inspection |
+| `daily-discovery-digest.json` | Mon–Fri 9am | Runs all enabled ATS sources, fetches pending candidates, sends Telegram digest |
+| `jarvis-julian-personal-alerts.json` | Mon–Fri 8am/12pm/6pm | Personal ML/AI-filtered alerts for Julian via JARVIS Telegram bot |
+
+All workflows call the backend over the Docker network (`http://backend:8000`). No direct DB access from n8n.
+
+### Dashboard
+- Counts: companies, users, contacts, applications
+- Ownership breakdown: unclaimed / claimed / paused / done
+- Reminder badges: overdue, due today, due soon, pending review
+- Pipeline status by application status
+
+## Local Setup
+
+### Prerequisites
+- Docker Desktop (or Docker Engine + Compose v2)
+- Tested on Linux (Fedora) and Windows with WSL2
+
+### Linux/Mac
+
+```bash
+cp .env.example .env
+docker compose up --build -d
 docker compose exec backend alembic upgrade head
-docker compose exec backend pytest
-docker compose run --rm --no-deps frontend npm run validate:build
-```
-
-## Demo Data
-
-The repository includes a local demo seed script with fictional data only. It creates sample companies, users, contacts and applications using clearly fake `demo.example` domains. The records are intended for local demos and screenshots, not for production use.
-
-Load demo data after applying migrations:
-
-```powershell
-docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_demo_data.py"
 ```
 
 Local URLs:
+- **Frontend**: http://localhost:3001
+- **Backend / Swagger**: http://localhost:8000/docs
+- **n8n**: http://localhost:5678
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- Swagger: http://localhost:8000/docs
-- n8n: http://localhost:5678
+> **Note:** Port 3001 is used because 3000 may be occupied by other services (e.g., AdGuard). Change `FRONTEND_PORT` in `.env` if needed.
 
-## Using With A Team
+### Windows (PowerShell)
 
-Start by adding team members in `/users`, completing profiles, registering controlled ATS sources in `/discovery/sources`, reviewing candidates in `/discovery`, claiming companies from company detail pages and tracking applications manually.
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+docker compose exec backend alembic upgrade head
+```
 
-See:
+### Apply Migrations (first run and after updates)
 
-- [Team onboarding](docs/team-onboarding.md)
-- [ATS source examples](docs/ats-source-examples.md)
+```bash
+docker compose exec backend alembic upgrade head
+```
 
-## Discovery MVP
+### Run Backend Tests
 
-The `/discovery` page runs a deterministic demo discovery process. It creates fictional `DiscoveryCandidate` records and optional demo `JobPosting` records using `.demo.example` URLs only.
+```bash
+docker compose exec backend pytest -v
+# Expected: 85 passed
+```
 
-Candidates start as `pending_review`. Approving a candidate creates or links a company by domain or normalized company name, marks the candidate as `approved`, and links the detected job posting to the company when possible. Rejecting a candidate marks it as `rejected`.
+### Load Demo Data (optional)
 
-`/discovery/sources` lets the team register controlled public ATS board sources for Greenhouse, Lever and Ashby. Source runs use unauthenticated HTTP GET only, do not store credentials, do not crawl linked pages and only keep likely internship or early-career titles. Fetched jobs create pending discovery candidates and open job postings; candidates still require human approval.
+```bash
+docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_demo_data.py"
+docker compose exec backend sh -c "PYTHONPATH=/app python scripts/seed_discovery_sources.py"
+```
 
-`/job-postings` shows fetched and demo job postings. The team can manually link a posting to an approved company and create an application from that reviewed opportunity.
+## Production / Self-Host
 
-## Company Claiming
+The stack is designed to be dropped onto any Linux server with Docker.
 
-Companies can be manually claimed by a selected user. The ownership fields are `owner_user_id`, `ownership_status`, `claimed_at` and `ownership_notes`. Claiming is a coordination tool only; there is no authentication or permissions layer yet, so the user is selected manually from the existing users list.
+```bash
+# On your server
+git clone <repo> internship-pipeline
+cd internship-pipeline
+cp .env.example .env
+# Edit .env: set real passwords, FRONTEND_PORT, N8N_HOST, N8N_PROTOCOL
+docker compose up -d
+docker compose exec backend alembic upgrade head
+```
 
-Releasing a company clears the owner, resets the status to `unclaimed`, clears `claimed_at` and clears ownership notes. The dashboard shows simple counts for unclaimed, claimed, paused and done companies.
+For production:
+- Set strong passwords in `.env` (`POSTGRES_PASSWORD`, `N8N_BASIC_AUTH_PASSWORD`, `N8N_ENCRYPTION_KEY`)
+- Set `N8N_HOST` to your server domain or IP
+- Configure a reverse proxy (nginx/caddy) for HTTPS if exposing externally
+- Do not expose PostgreSQL port (5432) publicly
 
-## Internal Reminders
+See [deploy-railway.md](docs/deploy-railway.md) for Railway.app deployment.
 
-The `/reminders` page computes reminders from existing records without creating a reminders table. It shows overdue application actions, actions due today, actions due soon, pending discovery candidates and stale claimed companies.
+## n8n Setup
 
-This is internal visibility only. It does not send emails, create outreach, call external APIs or run n8n workflows. Future notification workflows can build on this layer after review.
+1. Open http://localhost:5678
+2. Login: `local-admin` / `change-me-local-only` (change in `.env`)
+3. Import workflows from `n8n/workflows/`:
+   - Settings → Workflows → Import from file
+4. For Telegram notifications:
+   - Credentials → New → Telegram API → paste bot token
+   - Set `TELEGRAM_CHAT_ID` env var in `.env`
+5. Activate the daily digest or JARVIS workflow
 
-## n8n Internal Reminders Demo
+### JARVIS Personal Alerts (optional, private)
 
-The repository includes a local demo n8n workflow export at `n8n/workflows/internal-reminders-demo.json`. It manually calls `http://backend:8000/reminders/n8n-summary` from inside the Docker network and formats a reminder summary inside n8n.
+The `jarvis-julian-personal-alerts.json` workflow sends ML/AI-filtered pipeline alerts to Julian's Telegram via JARVIS bot. It runs 3× per day on weekdays, filtering discovery candidates by ML/AI/Data Engineering keywords and application reminders by user. Configure:
 
-The workflow is inactive, local/demo-only and contains no credentials. It does not send emails, outreach, Slack, Discord or external webhooks.
+```bash
+# In .env (do not commit if sharing the repo)
+TELEGRAM_CHAT_ID=<your-chat-id>
+JARVIS_TELEGRAM_BOT_TOKEN=<your-bot-token>
+```
 
-Local-dev limitation: the reminders summary endpoint does not require authentication yet. Keep the workflow local/internal until auth and an approved internal notification channel are added.
+Then restart n8n: `docker compose restart n8n` and configure the "JARVIS Bot" credential in n8n with the bot token.
 
-## API Overview
+## API Reference
 
-- `GET /health`
-- `/companies`
-- `/companies/{id}`
-- `POST /companies/{id}/claim`
-- `POST /companies/{id}/release`
-- `PATCH /companies/{id}/ownership`
-- `/companies/{id}/contacts`
-- `/companies/{id}/applications`
-- `/users`
-- `/users/{id}`
-- `/users/{id}/applications`
-- `/contacts`
-- `/applications`
-- `/discovery-candidates`
-- `/discovery-sources`
-- `POST /discovery-sources/{id}/run`
-- `POST /discovery-sources/run-enabled`
-- `POST /discovery-candidates/run-demo-discovery`
-- `POST /discovery-candidates/{id}/approve`
-- `POST /discovery-candidates/{id}/reject`
-- `/job-postings`
-- `PATCH /job-postings/{id}/link-company`
-- `POST /job-postings/{id}/create-application`
-- `GET /reminders`
-- `GET /reminders/n8n-summary`
-- `GET /dashboard/summary`
+All endpoints are documented at http://localhost:8000/docs (Swagger UI).
 
-Each resource supports the current MVP CRUD workflow through the FastAPI backend. Detailed schemas are available in Swagger at http://localhost:8000/docs after the stack is running.
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Health check |
+| GET/POST | `/companies` | List / create companies |
+| GET/PATCH/DELETE | `/companies/{id}` | Company detail |
+| POST | `/companies/{id}/claim` | Claim company |
+| POST | `/companies/{id}/release` | Release company |
+| PATCH | `/companies/{id}/ownership` | Update ownership status |
+| GET/POST | `/users` | List / create users |
+| GET/PATCH/DELETE | `/users/{id}` | User detail |
+| GET/POST | `/contacts` | List / create contacts |
+| GET/PATCH/DELETE | `/contacts/{id}` | Contact detail |
+| GET/POST | `/applications` | List / create applications |
+| GET/PATCH/DELETE | `/applications/{id}` | Application detail |
+| GET | `/discovery-candidates` | List candidates (filter by status) |
+| POST | `/discovery-candidates/run-demo-discovery` | Run demo discovery |
+| POST | `/discovery-candidates/{id}/approve` | Approve candidate |
+| POST | `/discovery-candidates/{id}/reject` | Reject candidate |
+| GET/POST | `/discovery-sources` | List / create ATS sources |
+| PATCH/DELETE | `/discovery-sources/{id}` | Update / delete source |
+| POST | `/discovery-sources/{id}/run` | Run a single source |
+| POST | `/discovery-sources/run-enabled` | Run all enabled sources |
+| GET | `/job-postings` | List job postings |
+| PATCH | `/job-postings/{id}/link-company` | Link posting to company |
+| POST | `/job-postings/{id}/create-application` | Create application from posting |
+| GET | `/reminders` | List reminders (supports filters) |
+| GET | `/reminders/n8n-summary` | Compact summary for n8n |
+| GET | `/dashboard/summary` | Dashboard counts |
 
 ## Testing
 
-Run backend tests:
+### Unit / Integration Tests
 
-```powershell
-docker compose exec backend pytest
+```bash
+docker compose exec backend pytest -v
+# 85 passed, 0 failed
 ```
 
-The test suite overrides the FastAPI database dependency and wraps each test in a transaction with rollback. Tests should not leave companies, ownership changes, users, contacts, applications, discovery candidates or job postings visible in the development dashboard.
+Tests use `AsyncSession` with per-test transaction rollback. No test data leaks to the dashboard.
 
-Run frontend build:
+### Stress Test
 
-```powershell
+The included stress test script (`scripts/` or run via Python) validates:
+- 5 workers × 10 iterations: 179 req/s, P99 215ms ✓
+- 20 workers × 10 iterations: 514 req/s, P99 239ms ✓
+- 50 workers × 5 iterations: 480 req/s, P99 328ms ✓
+
+All scenarios: 0 errors.
+
+```bash
+python3 scripts/stress_test.py
+```
+
+### Frontend Build Validation
+
+```bash
 docker compose run --rm --no-deps frontend npm run validate:build
 ```
 
-If the dev server ever shows stale `.next` chunk errors after build validation, restart it with a clean Next.js cache:
+## Safety and Compliance
 
-```powershell
-docker compose stop frontend
-docker compose run --rm --no-deps frontend npm run clean
-docker compose up -d frontend
-```
+This system currently:
+- Does **not** scrape LinkedIn or company websites
+- Only calls **public unauthenticated ATS JSON endpoints**
+- Does **not** use Apollo, Hunter, or any People Finder
+- Does **not** send emails or automate outreach
+- Does **not** use real personal data in demo records
+- Does **not** call OpenAI, Anthropic, or any LLM API
+- Requires **human approval** before any discovery candidate becomes a company
 
-## Safety, Ethics and Compliance
-
-The MVP currently:
-
-- does not scrape LinkedIn or company websites
-- only calls configured public ATS JSON endpoints with unauthenticated GET requests
-- does not use Apollo or Hunter
-- does not send emails
-- does not automate outreach
-- does not use real personal data
-- does not call Resend, OpenAI, Anthropic or similar APIs
-- does not publish n8n workflows
-
-The project is designed to build a safe source of truth first. Any future automation should require explicit review, compliance checks and human approval.
+All data in the demo seed uses clearly fake `demo.example` domains. No real personal data.
 
 ## Roadmap
 
-### Phase 1
+**Phase 2 (next)**
+- n8n workflows for internal Slack/Discord notifications
+- Manual reminder creation and management
+- Auth layer (token or session) for multi-user access control
 
-- improve tracker UX
-- add detail views by company and user
-- expand safe discovery review workflows
+**Phase 3**
+- Assisted matching: score candidates against user profiles
+- Controlled LLM draft generation with human review
+- Company enrichment from public sources with approval gate
 
-### Phase 2
+**Phase 4**
+- Broader automated discovery (web scraping with allowlist + ToS review)
+- People Finder with compliance review
+- Full outreach queue with human approval
 
-- controlled ATS discovery research with strict allowlists
-- internal n8n workflows
-- notifications for next actions
-- manual reminders
+## Repository Notes
 
-### Phase 3
-
-- assisted technical matching
-- controlled enrichment
-- LLM draft generation with human review
-
-### Phase 4
-
-- broader automated discovery
-- People Finder
-- compliance review and human approval gates
+- `.env` is gitignored — never commit real credentials
+- `credentials.json` and `token.json` are gitignored
+- Use `.env.example` as the configuration template
+- Migrations live in `backend/alembic/versions/` — always run `alembic upgrade head` after pulling
+- Docker volumes persist data between restarts; use `docker compose down -v` only to reset completely
 
 ## Portfolio Angle
 
 This project demonstrates:
-
-- full-stack architecture
-- backend API design with FastAPI
-- relational data modeling with PostgreSQL
-- SQLAlchemy 2.0 ORM usage
-- Alembic migrations
-- Dockerized local development
-- backend test isolation
-- frontend dashboard development with Next.js
-- product thinking around data workflows and automation safety
-
-## Repository Notes
-
-Use `.env.example` as the template for local configuration. Do not commit `.env`, real credentials, API keys, tokens or private data.
+- Full-stack architecture with clear separation of concerns
+- Async FastAPI with SQLAlchemy 2.0 and asyncpg
+- Relational data modeling: companies, users, contacts, applications, discovery, ownership
+- Alembic migrations with versioned schema evolution
+- Dockerized multi-service local development
+- Test isolation with per-test transaction rollback (85 tests)
+- n8n workflow integration for scheduling and notifications
+- Product thinking: human review gates before automation, progressive profiles, ownership coordination

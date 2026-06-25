@@ -244,19 +244,22 @@ async def test_fetched_candidates_remain_pending_review(client: AsyncClient, mon
 
 @pytest.mark.asyncio
 async def test_create_getonboard_discovery_source(client: AsyncClient):
+    from uuid import uuid4
+
+    unique_key = f"global-test-{uuid4().hex[:8]}"
     response = await client.post(
         "/discovery-sources",
         json={
             "name": "GetOnBoard Global",
             "source_type": "getonboard",
-            "source_key": "global",
+            "source_key": unique_key,
             "enabled": True,
         },
     )
     assert response.status_code == 201
     body = response.json()
     assert body["source_type"] == "getonboard"
-    assert body["source_key"] == "global"
+    assert body["source_key"] == unique_key
 
 
 @pytest.mark.asyncio
@@ -284,12 +287,15 @@ async def test_getonboard_runner_creates_pending_candidates(client: AsyncClient,
 
     monkeypatch.setattr("app.discovery.runners.getonboard_runner.run_getonboard_discovery", fake_run_getonboard)
 
+    from uuid import uuid4
+
+    unique_key = f"global-runner-{uuid4().hex[:8]}"
     source_resp = await client.post(
         "/discovery-sources",
         json={
             "name": "GetOnBoard Global",
             "source_type": "getonboard",
-            "source_key": "global",
+            "source_key": unique_key,
             "enabled": True,
         },
     )

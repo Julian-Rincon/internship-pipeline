@@ -1,0 +1,149 @@
+{
+  "name": "JARVIS — Julian Personal Pipeline Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8,12,18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "trigger-jarvis",
+      "name": "Mon-Fri 8am, 12pm, 6pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "notes": "Runs 3x/day on weekdays. Julian gets pipeline status before team sees it."
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/reminders/n8n-summary",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "days_ahead", "value": "7" },
+            { "name": "user_id", "value": "4fafd6de-9301-49b1-a7df-7ed6b01e3231" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-julian-reminders",
+      "name": "Fetch Julian reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0],
+      "notes": "Reminders filtered by Julian's user_id. Only his applications and claimed companies."
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/discovery-candidates",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "status", "value": "pending_review" },
+            { "name": "limit", "value": "100" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-new-candidates",
+      "name": "Fetch new discovery candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 200],
+      "notes": "Gets all pending candidates. Julian filters by ML/AI profile keywords."
+    },
+    {
+      "parameters": {
+        "jsCode": "const reminders = $('Fetch Julian reminders').first().json;\nconst allCandidates = $('Fetch new discovery candidates').all().map(i => i.json);\n\n// Julian's ML/AI keyword filter\nconst ML_KEYWORDS = [\n  'ml', 'machine learning', 'data engineering', 'data science', 'ai ', 'artificial intelligence',\n  'nlp', 'llm', 'mlops', 'deep learning', 'data infrastructure', 'analytics engineer',\n  'platform engineer', 'backend engineer', 'software engineer intern', 'data intern',\n  'python', 'pytorch', 'spark', 'pyspark', 'aws'\n];\n\nconst matchesMlProfile = (c) => {\n  const text = `${c.detected_job_title || ''} ${c.company_name || ''}`.toLowerCase();\n  return ML_KEYWORDS.some(kw => text.includes(kw));\n};\n\nconst mlCandidates = allCandidates.filter(matchesMlProfile);\n\n// Build message\nconst now = new Date();\nconst hour = now.getHours();\nconst greeting = hour < 12 ? '☀️ Buenos días' : hour < 18 ? '🌤 Buenas tardes' : '🌙 Buenas noches';\n\nlet msg = `${greeting}, Julian.\\n`;\nmsg += `🤖 *JARVIS — Pipeline Report*\\n`;\nmsg += `📅 ${now.toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'})}\\n\\n`;\n\n// Application reminders\nconst appReminders = Array.isArray(reminders.top_items)\n  ? reminders.top_items.filter(r => r.related_entity_type === 'application')\n  : [];\n\nif (appReminders.length > 0) {\n  msg += `📋 *Tus aplicaciones con acción pendiente:*\\n`;\n  for (const r of appReminders.slice(0, 5)) {\n    const icon = r.severity === 'high' ? '🔴' : r.severity === 'medium' ? '🟡' : '🟢';\n    msg += `${icon} ${r.description}\\n`;\n  }\n  msg += '\\n';\n} else {\n  msg += `✅ Sin acciones pendientes en tus aplicaciones.\\n\\n`;\n}\n\n// ML/AI matching candidates\nif (mlCandidates.length > 0) {\n  msg += `🎯 *${mlCandidates.length} candidatos ML/AI disponibles para revisar:*\\n`;\n  for (const c of mlCandidates.slice(0, 8)) {\n    const score = c.confidence_score || 0;\n    const icon = score >= 0.7 ? '🟢' : score >= 0.5 ? '🟡' : '🔴';\n    const title = c.detected_job_title || 'Posición';\n    const company = c.company_name || 'Empresa';\n    const url = c.detected_job_url ? `\\n   [Ver oferta](${c.detected_job_url})` : '';\n    msg += `${icon} *${company}*: ${title}${url}\\n`;\n  }\n  if (mlCandidates.length > 8) {\n    msg += `_...${mlCandidates.length - 8} más en el dashboard_\\n`;\n  }\n  msg += `\\n👉 [Revisar candidatos](http://localhost:3001/discovery)`;\n} else {\n  msg += `🔍 Sin nuevos candidatos ML/AI hoy.\\n`;\n  msg += `👉 [Ver dashboard](http://localhost:3001)`;\n}\n\nconst hasAnything = appReminders.length > 0 || mlCandidates.length > 0;\n\nreturn [{\n  json: {\n    message: msg,\n    should_notify: hasAnything,\n    ml_candidates_count: mlCandidates.length,\n    app_reminders_count: appReminders.length,\n    total_pending: allCandidates.length\n  }\n}];"
+      },
+      "id": "format-jarvis-message",
+      "name": "Format JARVIS personal alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 100],
+      "notes": "Filters by Julian's ML/AI profile. Sends only if there's something actionable."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "check-notify",
+              "leftValue": "={{ $json.should_notify }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-content",
+      "name": "Only notify if actionable",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 100],
+      "notes": "Skips Telegram if nothing new. Avoids notification spam."
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "8352014583",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-to-jarvis",
+      "name": "Send to Julian via JARVIS bot",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1060, 0],
+      "credentials": {
+        "telegramApi": {
+          "id": "jarvis-telegram-bot",
+          "name": "JARVIS Bot"
+        }
+      },
+      "notes": "Sends to Julian's Telegram (chat_id: 8352014583) via JARVIS bot. Configure credentials: JARVIS Bot Token in n8n Credentials."
+    }
+  ],
+  "connections": {
+    "Mon-Fri 8am, 12pm, 6pm": {
+      "main": [
+        [
+          { "node": "Fetch Julian reminders", "type": "main", "index": 0 },
+          { "node": "Fetch new discovery candidates", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Julian reminders": {
+      "main": [[{ "node": "Format JARVIS personal alert", "type": "main", "index": 0 }]]
+    },
+    "Fetch new discovery candidates": {
+      "main": [[{ "node": "Format JARVIS personal alert", "type": "main", "index": 0 }]]
+    },
+    "Format JARVIS personal alert": {
+      "main": [[{ "node": "Only notify if actionable", "type": "main", "index": 0 }]]
+    },
+    "Only notify if actionable": {
+      "main": [
+        [{ "node": "Send to Julian via JARVIS bot", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "tags": ["jarvis", "julian", "personal", "internship"],
+  "meta": {
+    "description": "Personal pipeline alerts for Julian via JARVIS Telegram bot. Filters ML/AI candidates matching his profile. Runs 3x/day on weekdays. NOT the team digest — this is Julian's private edge."
+  }
+}
