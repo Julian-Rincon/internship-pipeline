@@ -36,11 +36,11 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ./backend/app:/app/app
-      - ./backend/alembic:/app/alembic
-      - ./backend/tests:/app/tests
-      - ./scripts:/app/scripts
-      - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/app:/app/app:z
+      - ./backend/alembic:/app/alembic:z
+      - ./backend/tests:/app/tests:z
+      - ./scripts:/app/scripts:z
+      - ./backend/alembic.ini:/app/alembic.ini:z
 
   frontend:
     build:
@@ -53,7 +53,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app:z
       - frontend-node-modules:/app/node_modules
       - frontend-next-cache:/app/.next
 
@@ -72,7 +72,7 @@ services:
       - "${N8N_PORT:-5678}:5678"
     volumes:
       - n8n-data:/home/node/.n8n
-      - ./n8n/workflows:/workflows
+      - ./n8n/workflows:/workflows:z
     depends_on:
       - backend
 

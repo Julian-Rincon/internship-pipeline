@@ -8,7 +8,7 @@ from app.schemas.application import ApplicationStatus, ApplicationType
 
 DiscoveryCandidateStatus = Literal["pending_review", "approved", "rejected", "ignored"]
 JobPostingStatus = Literal["open", "closed", "archived"]
-DiscoverySourceType = Literal["greenhouse", "lever", "ashby"]
+DiscoverySourceType = Literal["greenhouse", "lever", "ashby", "getonboard"]
 
 
 class JobPostingRead(BaseModel):

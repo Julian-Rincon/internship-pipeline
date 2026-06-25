@@ -11,7 +11,7 @@ class DiscoverySource(Base):
     __tablename__ = "discovery_sources"
     __table_args__ = (
         CheckConstraint(
-            "source_type IN ('greenhouse', 'lever', 'ashby')",
+            "source_type IN ('greenhouse', 'lever', 'ashby', 'getonboard')",
             name="ck_discovery_sources_source_type",
         ),
         UniqueConstraint("source_type", "source_key", name="uq_discovery_sources_type_key"),

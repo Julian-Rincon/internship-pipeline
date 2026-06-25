@@ -240,3 +240,120 @@ async def test_fetched_candidates_remain_pending_review(client: AsyncClient, mon
         if candidate["detected_job_url"] == "https://jobs.lever.co/demo/pending"
     )
     assert candidate["status"] == "pending_review"
+
+
+@pytest.mark.asyncio
+async def test_create_getonboard_discovery_source(client: AsyncClient):
+    response = await client.post(
+        "/discovery-sources",
+        json={
+            "name": "GetOnBoard Global",
+            "source_type": "getonboard",
+            "source_key": "global",
+            "enabled": True,
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source_type"] == "getonboard"
+    assert body["source_key"] == "global"
+
+
+@pytest.mark.asyncio
+async def test_getonboard_runner_creates_pending_candidates(client: AsyncClient, monkeypatch):
+    created_urls: list[str] = []
+
+    async def fake_run_getonboard(db):
+        from app.models.discovery_candidate import DiscoveryCandidate
+
+        url = "https://www.getonbrd.com/jobs/demo-ai-corp/data-science-internship"
+        created_urls.append(url)
+        db.add(
+            DiscoveryCandidate(
+                company_name="Demo AI Corp",
+                source="getonboard",
+                source_url="https://www.getonbrd.com/api/v0/search/jobs",
+                detected_job_title="Data Science Internship",
+                detected_job_url=url,
+                confidence_score=0.65,
+                status="pending_review",
+            )
+        )
+        await db.commit()
+        return 1
+
+    monkeypatch.setattr("app.discovery.runners.getonboard_runner.run_getonboard_discovery", fake_run_getonboard)
+
+    source_resp = await client.post(
+        "/discovery-sources",
+        json={
+            "name": "GetOnBoard Global",
+            "source_type": "getonboard",
+            "source_key": "global",
+            "enabled": True,
+        },
+    )
+    assert source_resp.status_code == 201
+    source_id = source_resp.json()["id"]
+
+    run_resp = await client.post(f"/discovery-sources/{source_id}/run")
+    assert run_resp.status_code == 200
+    assert run_resp.json()["candidates_created"] == 1
+
+    candidates_resp = await client.get("/discovery-candidates")
+    assert any(
+        c["detected_job_url"] == created_urls[0] and c["status"] == "pending_review"
+        for c in candidates_resp.json()
+    )
+
+
+@pytest.mark.asyncio
+async def test_getonboard_runner_skips_duplicate_url(client: AsyncClient, monkeypatch):
+    call_count = 0
+
+    async def fake_run_getonboard(db):
+        nonlocal call_count
+        call_count += 1
+        from sqlalchemy import select
+
+        from app.models.discovery_candidate import DiscoveryCandidate
+
+        url = "https://www.getonbrd.com/jobs/demo-ml-corp/ml-internship"
+        existing = await db.scalar(
+            select(DiscoveryCandidate).where(DiscoveryCandidate.detected_job_url == url)
+        )
+        if existing is not None:
+            return 0
+        db.add(
+            DiscoveryCandidate(
+                company_name="Demo ML Corp",
+                source="getonboard",
+                source_url="https://www.getonbrd.com/api/v0/search/jobs",
+                detected_job_title="ML Engineering Internship",
+                detected_job_url=url,
+                confidence_score=0.65,
+                status="pending_review",
+            )
+        )
+        await db.commit()
+        return 1
+
+    monkeypatch.setattr("app.discovery.runners.getonboard_runner.run_getonboard_discovery", fake_run_getonboard)
+
+    source_resp = await client.post(
+        "/discovery-sources",
+        json={
+            "name": "GetOnBoard Dedup Test",
+            "source_type": "getonboard",
+            "source_key": "global-dedup",
+            "enabled": True,
+        },
+    )
+    source_id = source_resp.json()["id"]
+
+    first = await client.post(f"/discovery-sources/{source_id}/run")
+    second = await client.post(f"/discovery-sources/{source_id}/run")
+
+    assert first.json()["candidates_created"] == 1
+    assert second.json()["candidates_created"] == 0
+    assert call_count == 2
