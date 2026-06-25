@@ -1,0 +1,110 @@
+{
+  "name": "Daily Internship Discovery Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Every weekday at 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "notes": "Runs Mon-Fri at 09:00. Change cron or timezone in Schedule Trigger settings."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/discovery-sources/run-enabled",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "run-sources",
+      "name": "Run all enabled discovery sources",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0],
+      "notes": "Triggers GetOnBoard + Greenhouse + Lever + Ashby runners. Returns array of run results."
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/discovery-candidates",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "status", "value": "pending_review" },
+            { "name": "limit", "value": "50" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-pending",
+      "name": "Fetch pending candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 0],
+      "notes": "Gets all pending_review candidates — human review required before approving."
+    },
+    {
+      "parameters": {
+        "jsCode": "const runResults = $('Run all enabled discovery sources').all();\nconst candidates = $input.all();\n\nlet totalCreated = 0;\nlet totalErrors = 0;\nconst sourceLines = [];\n\nfor (const item of runResults) {\n  const r = item.json;\n  // run-enabled returns an array\n  if (Array.isArray(r)) {\n    for (const src of r) {\n      totalCreated += src.candidates_created || 0;\n      if (src.errors && src.errors.length > 0) totalErrors++;\n      sourceLines.push(`• ${src.source_name}: +${src.candidates_created} candidatos`);\n    }\n  }\n}\n\nconst pendingList = candidates.map(c => c.json);\nconst pendingCount = pendingList.length;\n\nlet msg = `🔍 *Internship Pipeline — Digest diario*\\n`;\nmsg += `📅 ${new Date().toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'})}\\n\\n`;\n\nif (totalCreated === 0 && totalErrors === 0 && pendingCount === 0) {\n  msg += `✅ Sin novedades hoy. No hay candidatos nuevos ni pendientes.`;\n} else {\n  if (totalCreated > 0 || sourceLines.length > 0) {\n    msg += `📊 *Fuentes corridas hoy:*\\n${sourceLines.join('\\n') || '— ninguna activa'}\\n\\n`;\n  }\n  if (pendingCount > 0) {\n    msg += `⏳ *${pendingCount} candidatos pendientes de revisión:*\\n`;\n    for (const c of pendingList.slice(0, 15)) {\n      const emoji = c.confidence_score >= 0.7 ? '🟢' : c.confidence_score >= 0.5 ? '🟡' : '🔴';\n      const title = c.detected_job_title || 'Posición sin título';\n      const company = c.company_name || 'Empresa desconocida';\n      const url = c.detected_job_url ? ` — [ver](${c.detected_job_url})` : '';\n      msg += `${emoji} *${company}*: ${title}${url}\\n`;\n    }\n    if (pendingCount > 15) {\n      msg += `_...y ${pendingCount - 15} más. Abre el dashboard para ver todos._\\n`;\n    }\n    msg += `\\n👉 Revisar en: http://localhost:3000/discovery`;\n  } else {\n    msg += `✅ Sin candidatos pendientes de revisión.`;\n  }\n  if (totalErrors > 0) {\n    msg += `\\n\\n⚠️ ${totalErrors} fuente(s) con error — revisa los logs.`;\n  }\n}\n\nreturn [{ json: { message: msg, pending_count: pendingCount, new_today: totalCreated } }];"
+      },
+      "id": "format-message",
+      "name": "Format Telegram digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 0],
+      "notes": "Formats a Spanish Telegram message with new candidates and pending review count."
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-telegram",
+      "name": "Send Telegram digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1040, 0],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot",
+          "name": "Internship Pipeline Bot"
+        }
+      },
+      "notes": "Requires: Credentials → Telegram API → bot token from @BotFather. Set TELEGRAM_CHAT_ID env var in n8n."
+    }
+  ],
+  "connections": {
+    "Every weekday at 9am": {
+      "main": [[{ "node": "Run all enabled discovery sources", "type": "main", "index": 0 }]]
+    },
+    "Run all enabled discovery sources": {
+      "main": [[{ "node": "Fetch pending candidates", "type": "main", "index": 0 }]]
+    },
+    "Fetch pending candidates": {
+      "main": [[{ "node": "Format Telegram digest", "type": "main", "index": 0 }]]
+    },
+    "Format Telegram digest": {
+      "main": [[{ "node": "Send Telegram digest", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["internship", "discovery", "digest"]
+}

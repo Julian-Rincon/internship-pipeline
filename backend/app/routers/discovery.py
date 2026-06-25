@@ -121,8 +121,18 @@ async def create_application_from_job_posting(
 
 
 @discovery_router.get("", response_model=list[DiscoveryCandidateRead])
-async def list_discovery_candidates(db: AsyncSession = Depends(get_db)) -> list[DiscoveryCandidate]:
-    result = await db.scalars(select(DiscoveryCandidate).order_by(DiscoveryCandidate.created_at.desc()))
+async def list_discovery_candidates(
+    status_filter: str | None = Query(default=None, alias="status"),
+    created_since: datetime | None = Query(default=None, description="ISO-8601 timestamp — only candidates created after this time"),
+    limit: int = Query(default=200, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+) -> list[DiscoveryCandidate]:
+    statement = select(DiscoveryCandidate)
+    if status_filter:
+        statement = statement.where(DiscoveryCandidate.status == status_filter)
+    if created_since:
+        statement = statement.where(DiscoveryCandidate.created_at >= created_since)
+    result = await db.scalars(statement.order_by(DiscoveryCandidate.created_at.desc()).limit(limit))
     return list(result)
 
 
