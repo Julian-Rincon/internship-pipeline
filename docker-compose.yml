@@ -78,9 +78,21 @@ services:
     depends_on:
       - backend
 
+  # Uptime Kuma — optional monitoring UI at :3002
+  # Start with: docker compose --profile monitoring up -d
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    profiles: [monitoring]
+    ports:
+      - "3002:3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   redis-data:
   frontend-node-modules:
   frontend-next-cache:
   n8n-data:
+  uptime-kuma-data:
