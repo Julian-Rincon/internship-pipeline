@@ -50,7 +50,7 @@ async def test_dashboard_summary_includes_ownership_counts(client: AsyncClient):
             "name": "Dashboard Ownership User",
             "email": f"dashboard-ownership-user-{uuid4().hex}@example.com",
             "role": "member",
-            "profile_status": "incomplete",
+            "profile_status": "incomplete", "password": "test-password-123",
         },
     )
     assert company_response.status_code == 201

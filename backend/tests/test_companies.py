@@ -20,7 +20,7 @@ async def create_test_user(client: AsyncClient) -> dict:
             "name": "Ownership Test User",
             "email": f"ownership-user-{uuid4().hex}@example.com",
             "role": "member",
-            "profile_status": "incomplete",
+            "profile_status": "incomplete", "password": "test-password-123",
         },
     )
     assert response.status_code == 201

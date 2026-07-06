@@ -35,6 +35,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://internship:change-me-local-only@postgres:5432/internship_pipeline}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       API_KEY: ${API_KEY:-change-me-local-only}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-only}
+      JWT_EXPIRES_SECONDS: ${JWT_EXPIRES_SECONDS:-604800}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -55,7 +57,9 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:8000}
-      NEXT_PUBLIC_API_KEY: ${API_KEY:-change-me-local-only}
+      # Server-side rendering only (never sent to the browser) — the actual
+      # browser now authenticates as a real logged-in person via JWT instead
+      # of a shared key. See frontend/app/login/page.tsx.
       INTERNAL_API_KEY: ${API_KEY:-change-me-local-only}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

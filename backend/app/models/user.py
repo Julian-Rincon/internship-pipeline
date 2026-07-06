@@ -21,6 +21,10 @@ class User(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    # Nullable: rows created before login existed have none, and /auth/login
+    # treats that as "this account can't log in yet" rather than crashing.
+    # Every new account created via POST /users gets one going forward.
+    hashed_password: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(Text, nullable=False, default="member", server_default="member")
     profile_status: Mapped[str] = mapped_column(
         Text,

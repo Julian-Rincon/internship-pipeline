@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthStatus } from "../components/AuthStatus";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/templates">Templates</Link>
               <Link href="/outreach">Outreach</Link>
             </nav>
+            <AuthStatus />
           </header>
           {children}
         </main>

@@ -20,7 +20,7 @@ async def create_user(client: AsyncClient) -> str:
             "name": "Interview Test User",
             "email": f"interview-user-{uuid4().hex}@example.com",
             "role": "member",
-            "profile_status": "incomplete",
+            "profile_status": "incomplete", "password": "test-password-123",
         },
     )
     assert response.status_code == 201

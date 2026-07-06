@@ -10,7 +10,12 @@ class Settings(BaseSettings):
         validation_alias="DATABASE_URL",
     )
     cors_origins: str = Field(default="http://localhost:3000", validation_alias="CORS_ORIGINS")
+    # Service-to-service credential (n8n workflows, the frontend's own
+    # server-side rendering) — not tied to a person, so it stays a shared key.
     api_key: str = Field(default="", validation_alias="API_KEY")
+    # Signs/verifies per-person JWTs issued by POST /auth/login.
+    jwt_secret: str = Field(default="", validation_alias="JWT_SECRET")
+    jwt_expires_seconds: int = Field(default=7 * 24 * 3600, validation_alias="JWT_EXPIRES_SECONDS")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

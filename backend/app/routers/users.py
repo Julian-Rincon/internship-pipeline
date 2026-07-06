@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import hash_password, require_admin
 from app.db import get_db
 from app.models.application import Application
 from app.models.user import User
@@ -20,9 +21,13 @@ async def list_users(db: AsyncSession = Depends(get_db)) -> list[User]:
     return list(result)
 
 
-@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=UserRead, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
 async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
-    user = User(**payload.model_dump())
+    data = payload.model_dump(exclude={"password"})
+    user = User(**data, hashed_password=hash_password(payload.password))
     db.add(user)
 
     try:
@@ -85,7 +90,10 @@ async def update_user(
     return user
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{user_id}", status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)],
+)
 async def delete_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> Response:
     user = await db.get(User, user_id)
     if user is None:

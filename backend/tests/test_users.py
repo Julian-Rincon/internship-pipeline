@@ -11,7 +11,7 @@ async def test_create_user_with_minimum_fields(client: AsyncClient):
         "name": "Example Member",
         "email": f"member-{uuid4().hex}@example.com",
         "role": "member",
-        "profile_status": "incomplete",
+        "profile_status": "incomplete", "password": "test-password-123",
     }
 
     response = await client.post("/users", json=payload)
@@ -31,7 +31,7 @@ async def test_list_users(client: AsyncClient):
     email = f"list-user-{uuid4().hex}@example.com"
     create_response = await client.post(
         "/users",
-        json={"name": "List User", "email": email, "role": "member", "profile_status": "incomplete"},
+        json={"name": "List User", "email": email, "role": "member", "profile_status": "incomplete", "password": "test-password-123"},
     )
     user_id = create_response.json()["id"]
 
@@ -46,7 +46,7 @@ async def test_get_user_by_id(client: AsyncClient):
     email = f"get-user-{uuid4().hex}@example.com"
     create_response = await client.post(
         "/users",
-        json={"name": "Get User", "email": email, "role": "member", "profile_status": "incomplete"},
+        json={"name": "Get User", "email": email, "role": "member", "profile_status": "incomplete", "password": "test-password-123"},
     )
     user_id = create_response.json()["id"]
 
@@ -61,7 +61,7 @@ async def test_patch_optional_user_profile_fields(client: AsyncClient):
     email = f"patch-user-{uuid4().hex}@example.com"
     create_response = await client.post(
         "/users",
-        json={"name": "Patch User", "email": email, "role": "member", "profile_status": "incomplete"},
+        json={"name": "Patch User", "email": email, "role": "member", "profile_status": "incomplete", "password": "test-password-123"},
     )
     user_id = create_response.json()["id"]
 
@@ -89,7 +89,7 @@ async def test_change_profile_status(client: AsyncClient):
     email = f"status-user-{uuid4().hex}@example.com"
     create_response = await client.post(
         "/users",
-        json={"name": "Status User", "email": email, "role": "member", "profile_status": "incomplete"},
+        json={"name": "Status User", "email": email, "role": "member", "profile_status": "incomplete", "password": "test-password-123"},
     )
     user_id = create_response.json()["id"]
 
@@ -104,7 +104,7 @@ async def test_delete_user(client: AsyncClient):
     email = f"delete-user-{uuid4().hex}@example.com"
     create_response = await client.post(
         "/users",
-        json={"name": "Delete User", "email": email, "role": "member", "profile_status": "incomplete"},
+        json={"name": "Delete User", "email": email, "role": "member", "profile_status": "incomplete", "password": "test-password-123"},
     )
     user_id = create_response.json()["id"]
 
@@ -122,7 +122,7 @@ async def test_duplicate_email_is_rejected(client: AsyncClient):
         "name": "Duplicate User",
         "email": email,
         "role": "member",
-        "profile_status": "incomplete",
+        "profile_status": "incomplete", "password": "test-password-123",
     }
 
     first_response = await client.post("/users", json=payload)

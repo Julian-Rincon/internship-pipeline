@@ -172,6 +172,43 @@ El aviso de logs sobre Python task runner missing no bloquea esta fase. n8n esta
 - No activar workflows n8n con acciones externas sin aprobacion.
 - No implementar scraping ni People Finder todavia.
 
+## Autenticación (actualizado 2026-07-06 — JWT por persona)
+
+El equipo pasó de 2 a ~5-6 personas, así que se reemplazó la key compartida
+única por un modelo de dos niveles:
+
+- **JWT por persona** — cada quien tiene su propia cuenta (nombre, email,
+  password) y entra por `/login` en el frontend. El navegador manda el token
+  de ESA persona (`Authorization: Bearer ...`), no un secreto compartido.
+  Los tokens duran `JWT_EXPIRES_SECONDS` (7 días por defecto) y se guardan en
+  `localStorage` del navegador — si expira o es inválido, la app rebota sola
+  a `/login`.
+- **`API_KEY` de sistema** (header `X-API-Key`) — para llamadas que NO son de
+  una persona: los workflows de n8n y el renderizado del lado del servidor
+  del frontend. Se sigue usando exactamente igual que antes.
+- **Roles**: solo cuentas con `role=admin` pueden crear (`POST /users`) o
+  borrar (`DELETE /users/{id}`) cuentas de otras personas. Cualquier persona
+  logueada (member o admin) puede usar el resto de la app normalmente — es
+  una herramienta de equipo compartida, no un sistema con datos privados por
+  usuario.
+
+### Crear la primera cuenta admin (bootstrap)
+
+No hay una pantalla de "primer arranque" — la primera cuenta admin se crea
+con `API_KEY` directamente (funciona igual en Windows o Linux, solo necesita
+`curl` o Postman/Insomnia si prefieren algo visual):
+
+```bash
+curl -X POST http://localhost:8000/users \
+  -H "X-API-Key: TU_API_KEY_REAL" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Tu Nombre","email":"tu@email.com","role":"admin","password":"una-contraseña-de-verdad"}'
+```
+
+Con esa cuenta, entren a `/login` en el frontend — desde ahí ya pueden crear
+al resto del equipo (`POST /users` autenticado como admin, o directamente
+desde la página `/users` del frontend una vez logueados).
+
 ## Checklist de seguridad ANTES de desplegar en un servidor real (2026-07-06)
 
 Esto ya no es "esta fase local" — es para quien vaya a correr `docker compose up`
@@ -179,14 +216,16 @@ en una máquina con IP pública (Windows o Linux, docker compose funciona igual
 en ambos). Auditoría de seguridad hecha 2026-07-05 encontró 63 endpoints sin
 ninguna autenticación, Postgres/Redis/n8n expuestos a toda la red, y passwords
 en el valor literal `change-me-local-only`. Ya se arregló en código (ver
-commit correspondiente); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
+commits correspondientes); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
 
 1. **Generar secretos reales** — uno distinto por cada valor, con:
    ```
    python3 -c "import secrets; print(secrets.token_urlsafe(32))"
    ```
    Reemplazar en `.env` (nunca en `.env.example`, ni commitear `.env`):
-   - `API_KEY` (protege los 63 endpoints del backend — antes no existía nada)
+   - `API_KEY` (llamadas de sistema: n8n, server-side rendering)
+   - `JWT_SECRET` (firma los tokens de login de cada persona — si alguien
+     lo adivinara podría forjar tokens; debe ser aleatorio y real)
    - `POSTGRES_PASSWORD` (y actualizar `DATABASE_URL` con el mismo valor)
    - `N8N_BASIC_AUTH_PASSWORD`
    - `N8N_ENCRYPTION_KEY`
@@ -204,7 +243,7 @@ commit correspondiente); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
 
 4. **Recomendado, no bloqueante**: poner un reverse proxy (Caddy o nginx) con
    HTTPS delante de `frontend` y `backend` — ahora mismo todo viaja en HTTP
-   plano, incluida la API key en el header `X-API-Key`.
+   plano, incluido el JWT y la API key.
 
 5. Si necesitan ver la interfaz de n8n desde otra máquina (no la del server),
    usar un túnel SSH en vez de abrir el puerto:
@@ -213,12 +252,7 @@ commit correspondiente); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
    ```
    y entrar a `http://localhost:5678` desde su propia máquina.
 
-**Nota sobre el alcance real de `API_KEY`:** el frontend manda esta key en
-cada llamada al backend, incluidas las que hace el navegador directamente
-(vía `NEXT_PUBLIC_API_KEY`) — esa variable SÍ queda visible para quien
-inspeccione el código del sitio en su navegador. La key no esconde el
-backend de alguien que ya usa la app; su trabajo es bloquear que cualquiera
-en internet encuentre el puerto abierto y empiece a leer/crear/borrar datos
-sin ni siquiera abrir el sitio. Para dos personas usando su propia
-herramienta, es una mejora real y proporcionada — no es el nivel de un
-producto multi-usuario público.
+6. Correr la migración nueva al desplegar (agrega la columna de contraseña):
+   ```
+   docker compose exec backend alembic upgrade head
+   ```

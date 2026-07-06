@@ -1,9 +1,10 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.auth import verify_api_key
+from app.auth import require_auth
 from app.config import settings
 from app.routers.applications import router as applications_router
+from app.routers.auth_router import router as auth_router
 from app.routers.companies import router as companies_router
 from app.routers.contacts import router as contacts_router
 from app.routers.dashboard import router as dashboard_router
@@ -33,10 +34,14 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "backend"}
 
 
-# Every real router requires the API key (header X-API-Key) — /health above
-# is the only public route, since container/uptime health checks need it.
-# Looping over a list (instead of one dependencies=[...] per include_router
-# call) means a router added here later can't accidentally ship unprotected.
+# POST /auth/login is public by necessity — you don't have a token yet.
+app.include_router(auth_router)
+
+# Every real router requires either a person's JWT (Authorization: Bearer)
+# or the service API key (X-API-Key, for n8n / server-side rendering) — see
+# app/auth.py. /health and /auth above are the only public routes. Looping
+# over a list (instead of one dependencies=[...] per include_router call)
+# means a router added here later can't accidentally ship unprotected.
 _ROUTERS = (
     applications_router,
     companies_router,
@@ -54,4 +59,4 @@ _ROUTERS = (
     visa_router,
 )
 for _router in _ROUTERS:
-    app.include_router(_router, dependencies=[Depends(verify_api_key)])
+    app.include_router(_router, dependencies=[Depends(require_auth)])

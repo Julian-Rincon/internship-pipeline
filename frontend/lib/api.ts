@@ -1,3 +1,5 @@
+import { getToken, setToken, clearToken } from "./auth";
+
 export type Company = {
   id: string;
   name: string;
@@ -286,25 +288,66 @@ function getApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 }
 
-function getApiKey(): string {
-  // Server-side (Server Components, API routes) uses INTERNAL_API_KEY, which
-  // is never sent to the browser. Client-side falls back to NEXT_PUBLIC_API_KEY,
-  // which — like any NEXT_PUBLIC_ var — IS visible in the browser bundle to
-  // anyone inspecting this page. That's an accepted tradeoff for this tool:
-  // the key's job is to block anonymous internet-wide scanning of the raw
-  // API, not to hide it from the two people actually using the app.
-  if (typeof window === "undefined") {
-    return process.env.INTERNAL_API_KEY ?? process.env.NEXT_PUBLIC_API_KEY ?? "";
-  }
-  return process.env.NEXT_PUBLIC_API_KEY ?? "";
-}
-
-/** Drop-in replacement for fetch() against the backend — adds X-API-Key to
- * whatever headers the call already sets, without touching each call site. */
+/** Drop-in replacement for fetch() against the backend. Server-side (Server
+ * Components rendering shared/public data) sends the service API key —
+ * that's a trusted system-to-system call, not "a specific person". Client-
+ * side (the actual browser) sends the logged-in user's own JWT instead: now
+ * that the team is several people, each action should be attributable to
+ * whoever is actually logged in, not to a key baked into the page for
+ * anyone who opens it. A 401 here means "not logged in (or expired)" and
+ * bounces to /login. */
 async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers);
-  headers.set("X-API-Key", getApiKey());
-  return fetch(url, { ...options, headers });
+  if (typeof window === "undefined") {
+    headers.set("X-API-Key", process.env.INTERNAL_API_KEY ?? "");
+  } else {
+    const token = getToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (typeof window !== "undefined" && response.status === 401 && !url.includes("/auth/login")) {
+    clearToken();
+    if (window.location.pathname !== "/login") {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+    }
+  }
+
+  return response;
+}
+
+export type LoginResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function login(email: string, password: string): Promise<LoginResult> {
+  try {
+    const response = await fetch(`${getApiUrl()}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      return { ok: false, error: body?.detail ?? "Email o contraseña incorrectos." };
+    }
+
+    const body = await response.json();
+    setToken(body.access_token);
+    return { ok: true };
+  } catch (error) {
+    console.error("Login failed", error);
+    return { ok: false, error: "No se pudo conectar con el servidor." };
+  }
+}
+
+export function logout(): void {
+  clearToken();
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 }
 
 export async function getCompanies(): Promise<ApiResult<Company[]>> {

@@ -26,7 +26,7 @@ async def create_user(
         "name": f"TechMatch User {uuid4().hex[:8]}",
         "email": f"techuser-{uuid4().hex}@example.com",
         "role": "member",
-        "profile_status": "incomplete",
+        "profile_status": "incomplete", "password": "test-password-123",
     }
     if strong_skills is not None:
         payload["strong_skills"] = strong_skills
