@@ -34,3 +34,12 @@ asyncio_mode = "strict"
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Without this, setuptools' flat-layout auto-discovery finds both app/ and
+# alembic/ as top-level packages and refuses to guess which one to build —
+# only fails on a full checkout (CI); the Dockerfile never hit this because
+# it installs from just pyproject.toml before app/ and alembic/ are COPY'd
+# in. alembic/ is migration scripts run via the `alembic` CLI, not a package
+# meant to be imported, so it's excluded here on purpose.
+include = ["app*"]

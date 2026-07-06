@@ -11,7 +11,7 @@ async def mark_as_sent(outreach_log_id: UUID, db: AsyncSession) -> OutreachLog:
         raise ValueError(f"OutreachLog {outreach_log_id} not found")
     resend_key = os.getenv("RESEND_API_KEY")
     if resend_key:
-        print(f"[EmailSender] RESEND_API_KEY found — real sending TODO. Running dry-run for now.")
+        print("[EmailSender] RESEND_API_KEY found — real sending TODO. Running dry-run for now.")
     log.status = "sent"
     log.sent_at = datetime.now(UTC)
     await db.commit()

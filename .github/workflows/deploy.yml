@@ -11,14 +11,21 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Trigger deploy webhook
-        if: ${{ secrets.DEPLOY_WEBHOOK_URL != '' }}
+      # GitHub Actions rejects the whole workflow file (0 jobs, immediate
+      # failure) if `secrets` is referenced inside a step-level `if:` —
+      # "Unrecognized named-value: 'secrets'". Secrets are only readable as
+      # env vars inside `run:`, so the skip-if-not-configured check has to
+      # live in the bash script itself, not in `if:`.
+      - name: Trigger deploy webhook (or skip if not configured)
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
         run: |
-          curl -fsSL -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_SECRET }}" \
+          if [ -z "$DEPLOY_WEBHOOK_URL" ]; then
+            echo "DEPLOY_WEBHOOK_URL secret not set — skipping. Add it in repo Settings → Secrets to enable auto-deploy."
+            exit 0
+          fi
+          curl -fsSL -X POST "$DEPLOY_WEBHOOK_URL" \
+            -H "Authorization: Bearer $DEPLOY_WEBHOOK_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"ref":"main","repo":"internship-pipeline"}'
-
-      - name: Skip (webhook not configured)
-        if: ${{ secrets.DEPLOY_WEBHOOK_URL == '' }}
-        run: echo "DEPLOY_WEBHOOK_URL secret not set — skipping. Add it in repo Settings → Secrets to enable auto-deploy."

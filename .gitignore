@@ -23,6 +23,8 @@ out/
 # Builds and coverage
 dist/
 coverage/
+backend/build/
+backend/*.egg-info/
 
 # Logs
 *.log
