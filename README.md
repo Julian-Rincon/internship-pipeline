@@ -10,7 +10,7 @@ Built by and for students hunting international ML/Data Engineering internships.
 
 ## Project Status
 
-**Production-ready MVP.** All 85 backend tests pass. The system runs fully containerized with Docker Compose, including automated ATS discovery from 15+ real company sources (Greenhouse, Lever, Ashby, GetOnBoard), n8n scheduling workflows, and optional Telegram notifications via JARVIS.
+**Production-ready MVP.** All 85 backend tests pass. The system runs fully containerized with Docker Compose, including automated ATS discovery from 15+ real company sources (Greenhouse, Lever, Ashby, GetOnBoard), n8n scheduling workflows.
 
 ## Stack
 
