@@ -171,3 +171,54 @@ El aviso de logs sobre Python task runner missing no bloquea esta fase. n8n esta
 - No enviar correos ni mensajes desde el sistema.
 - No activar workflows n8n con acciones externas sin aprobacion.
 - No implementar scraping ni People Finder todavia.
+
+## Checklist de seguridad ANTES de desplegar en un servidor real (2026-07-06)
+
+Esto ya no es "esta fase local" — es para quien vaya a correr `docker compose up`
+en una máquina con IP pública (Windows o Linux, docker compose funciona igual
+en ambos). Auditoría de seguridad hecha 2026-07-05 encontró 63 endpoints sin
+ninguna autenticación, Postgres/Redis/n8n expuestos a toda la red, y passwords
+en el valor literal `change-me-local-only`. Ya se arregló en código (ver
+commit correspondiente); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
+
+1. **Generar secretos reales** — uno distinto por cada valor, con:
+   ```
+   python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+   ```
+   Reemplazar en `.env` (nunca en `.env.example`, ni commitear `.env`):
+   - `API_KEY` (protege los 63 endpoints del backend — antes no existía nada)
+   - `POSTGRES_PASSWORD` (y actualizar `DATABASE_URL` con el mismo valor)
+   - `N8N_BASIC_AUTH_PASSWORD`
+   - `N8N_ENCRYPTION_KEY`
+
+2. **`CORS_ORIGINS`** — poner la URL real donde va a vivir el frontend
+   (ej. `https://internships.tu-dominio.com`), no `localhost`. Si el frontend
+   corre en un puerto/dominio distinto al que quede aquí, las llamadas desde
+   el navegador van a fallar por CORS.
+
+3. **Ya viene resuelto en `docker-compose.yml`** (no requiere acción, solo
+   verificar que no se haya revertido): Postgres (5432), Redis (6379) y n8n
+   (5678) están publicados solo en `127.0.0.1` — ya no son alcanzables desde
+   fuera de esa máquina. Solo `backend` (8000) y `frontend` (3000/3001)
+   quedan expuestos a la red, que es lo que sí necesita ser público.
+
+4. **Recomendado, no bloqueante**: poner un reverse proxy (Caddy o nginx) con
+   HTTPS delante de `frontend` y `backend` — ahora mismo todo viaja en HTTP
+   plano, incluida la API key en el header `X-API-Key`.
+
+5. Si necesitan ver la interfaz de n8n desde otra máquina (no la del server),
+   usar un túnel SSH en vez de abrir el puerto:
+   ```
+   ssh -L 5678:localhost:5678 usuario@servidor
+   ```
+   y entrar a `http://localhost:5678` desde su propia máquina.
+
+**Nota sobre el alcance real de `API_KEY`:** el frontend manda esta key en
+cada llamada al backend, incluidas las que hace el navegador directamente
+(vía `NEXT_PUBLIC_API_KEY`) — esa variable SÍ queda visible para quien
+inspeccione el código del sitio en su navegador. La key no esconde el
+backend de alguien que ya usa la app; su trabajo es bloquear que cualquiera
+en internet encuentre el puerto abierto y empiece a leer/crear/borrar datos
+sin ni siquiera abrir el sitio. Para dos personas usando su propia
+herramienta, es una mejora real y proporcionada — no es el nivel de un
+producto multi-usuario público.

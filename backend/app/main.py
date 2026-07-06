@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth import verify_api_key
 from app.config import settings
 from app.routers.applications import router as applications_router
 from app.routers.companies import router as companies_router
@@ -32,17 +33,25 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "backend"}
 
 
-app.include_router(applications_router)
-app.include_router(companies_router)
-app.include_router(contacts_router)
-app.include_router(dashboard_router)
-app.include_router(discovery_router)
-app.include_router(discovery_sources_router)
-app.include_router(interviews_router)
-app.include_router(job_postings_router)
-app.include_router(outreach_router)
-app.include_router(reminders_router)
-app.include_router(tech_matcher_router)
-app.include_router(templates_router)
-app.include_router(users_router)
-app.include_router(visa_router)
+# Every real router requires the API key (header X-API-Key) — /health above
+# is the only public route, since container/uptime health checks need it.
+# Looping over a list (instead of one dependencies=[...] per include_router
+# call) means a router added here later can't accidentally ship unprotected.
+_ROUTERS = (
+    applications_router,
+    companies_router,
+    contacts_router,
+    dashboard_router,
+    discovery_router,
+    discovery_sources_router,
+    interviews_router,
+    job_postings_router,
+    outreach_router,
+    reminders_router,
+    tech_matcher_router,
+    templates_router,
+    users_router,
+    visa_router,
+)
+for _router in _ROUTERS:
+    app.include_router(_router, dependencies=[Depends(verify_api_key)])

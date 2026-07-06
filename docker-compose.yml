@@ -6,7 +6,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-internship}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Bound to loopback only — Postgres never needs to be reachable from
+      # outside this machine. The backend reaches it over the internal
+      # Docker network (postgres:5432) regardless of this binding. Kept
+      # published (not removed) so a local GUI client (pgAdmin/DBeaver) can
+      # still connect during development.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +23,8 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      # Loopback only — same reasoning as postgres above.
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
 
@@ -28,6 +34,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://internship:change-me-local-only@postgres:5432/internship_pipeline}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      API_KEY: ${API_KEY:-change-me-local-only}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -48,6 +55,8 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:8000}
+      NEXT_PUBLIC_API_KEY: ${API_KEY:-change-me-local-only}
+      INTERNAL_API_KEY: ${API_KEY:-change-me-local-only}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
@@ -70,8 +79,15 @@ services:
       DB_SQLITE_POOL_SIZE: 2
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       JARVIS_TELEGRAM_BOT_TOKEN: ${JARVIS_TELEGRAM_BOT_TOKEN:-}
+      BACKEND_API_KEY: ${API_KEY:-change-me-local-only}
     ports:
-      - "${N8N_PORT:-5678}:5678"
+      # Loopback only — n8n's UI holds the Telegram bot token and other
+      # credentials. The workflows here run on their own cron schedule and
+      # call the backend over the internal Docker network; nothing needs
+      # n8n reachable from outside this machine. To check the UI from
+      # another machine, use an SSH tunnel instead of exposing this port:
+      #   ssh -L 5678:localhost:5678 user@this-server
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
     volumes:
       - n8n-data:/home/node/.n8n
       - ./n8n/workflows:/workflows:z

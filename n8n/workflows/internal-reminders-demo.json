@@ -26,7 +26,16 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.BACKEND_API_KEY }}"
+            }
+          ]
+        }
       },
       "id": "0af4a4d2-bf60-4d3a-93b7-50aa5bc80b01",
       "name": "Fetch backend reminders - no external APIs",

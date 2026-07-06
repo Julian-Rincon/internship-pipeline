@@ -286,9 +286,30 @@ function getApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 }
 
+function getApiKey(): string {
+  // Server-side (Server Components, API routes) uses INTERNAL_API_KEY, which
+  // is never sent to the browser. Client-side falls back to NEXT_PUBLIC_API_KEY,
+  // which — like any NEXT_PUBLIC_ var — IS visible in the browser bundle to
+  // anyone inspecting this page. That's an accepted tradeoff for this tool:
+  // the key's job is to block anonymous internet-wide scanning of the raw
+  // API, not to hide it from the two people actually using the app.
+  if (typeof window === "undefined") {
+    return process.env.INTERNAL_API_KEY ?? process.env.NEXT_PUBLIC_API_KEY ?? "";
+  }
+  return process.env.NEXT_PUBLIC_API_KEY ?? "";
+}
+
+/** Drop-in replacement for fetch() against the backend — adds X-API-Key to
+ * whatever headers the call already sets, without touching each call site. */
+async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers);
+  headers.set("X-API-Key", getApiKey());
+  return fetch(url, { ...options, headers });
+}
+
 export async function getCompanies(): Promise<ApiResult<Company[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/companies`, {
+    const response = await apiFetch(`${getApiUrl()}/companies`, {
       cache: "no-store"
     });
 
@@ -309,7 +330,7 @@ export async function getCompanies(): Promise<ApiResult<Company[]>> {
 
 export async function getCompany(companyId: string): Promise<ApiResult<Company | null>> {
   try {
-    const response = await fetch(`${getApiUrl()}/companies/${companyId}`, {
+    const response = await apiFetch(`${getApiUrl()}/companies/${companyId}`, {
       cache: "no-store"
     });
 
@@ -330,7 +351,7 @@ export async function getCompany(companyId: string): Promise<ApiResult<Company |
 
 export async function getCompanyContacts(companyId: string): Promise<ApiResult<Contact[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/companies/${companyId}/contacts`, {
+    const response = await apiFetch(`${getApiUrl()}/companies/${companyId}/contacts`, {
       cache: "no-store"
     });
 
@@ -351,7 +372,7 @@ export async function getCompanyContacts(companyId: string): Promise<ApiResult<C
 
 export async function getCompanyApplications(companyId: string): Promise<ApiResult<Application[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/companies/${companyId}/applications`, {
+    const response = await apiFetch(`${getApiUrl()}/companies/${companyId}/applications`, {
       cache: "no-store"
     });
 
@@ -371,7 +392,7 @@ export async function getCompanyApplications(companyId: string): Promise<ApiResu
 }
 
 export async function createCompany(payload: CompanyPayload): Promise<Company> {
-  const response = await fetch(`${getApiUrl()}/companies`, {
+  const response = await apiFetch(`${getApiUrl()}/companies`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -388,7 +409,7 @@ export async function createCompany(payload: CompanyPayload): Promise<Company> {
 }
 
 export async function claimCompany(companyId: string, payload: CompanyClaimPayload): Promise<Company> {
-  const response = await fetch(`${getApiUrl()}/companies/${companyId}/claim`, {
+  const response = await apiFetch(`${getApiUrl()}/companies/${companyId}/claim`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -405,7 +426,7 @@ export async function claimCompany(companyId: string, payload: CompanyClaimPaylo
 }
 
 export async function releaseCompany(companyId: string): Promise<Company> {
-  const response = await fetch(`${getApiUrl()}/companies/${companyId}/release`, {
+  const response = await apiFetch(`${getApiUrl()}/companies/${companyId}/release`, {
     method: "POST"
   });
 
@@ -421,7 +442,7 @@ export async function updateCompanyOwnership(
   companyId: string,
   payload: CompanyOwnershipPayload
 ): Promise<Company> {
-  const response = await fetch(`${getApiUrl()}/companies/${companyId}/ownership`, {
+  const response = await apiFetch(`${getApiUrl()}/companies/${companyId}/ownership`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -439,7 +460,7 @@ export async function updateCompanyOwnership(
 
 export async function getUsers(): Promise<ApiResult<User[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/users`, {
+    const response = await apiFetch(`${getApiUrl()}/users`, {
       cache: "no-store"
     });
 
@@ -460,7 +481,7 @@ export async function getUsers(): Promise<ApiResult<User[]>> {
 
 export async function getUser(userId: string): Promise<ApiResult<User | null>> {
   try {
-    const response = await fetch(`${getApiUrl()}/users/${userId}`, {
+    const response = await apiFetch(`${getApiUrl()}/users/${userId}`, {
       cache: "no-store"
     });
 
@@ -481,7 +502,7 @@ export async function getUser(userId: string): Promise<ApiResult<User | null>> {
 
 export async function getUserApplications(userId: string): Promise<ApiResult<Application[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/users/${userId}/applications`, {
+    const response = await apiFetch(`${getApiUrl()}/users/${userId}/applications`, {
       cache: "no-store"
     });
 
@@ -501,7 +522,7 @@ export async function getUserApplications(userId: string): Promise<ApiResult<App
 }
 
 export async function createUser(payload: UserPayload): Promise<User> {
-  const response = await fetch(`${getApiUrl()}/users`, {
+  const response = await apiFetch(`${getApiUrl()}/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -518,7 +539,7 @@ export async function createUser(payload: UserPayload): Promise<User> {
 }
 
 export async function updateUser(userId: string, payload: Partial<UserPayload>): Promise<User> {
-  const response = await fetch(`${getApiUrl()}/users/${userId}`, {
+  const response = await apiFetch(`${getApiUrl()}/users/${userId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -536,7 +557,7 @@ export async function updateUser(userId: string, payload: Partial<UserPayload>):
 
 export async function getContacts(): Promise<ApiResult<Contact[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/contacts`, {
+    const response = await apiFetch(`${getApiUrl()}/contacts`, {
       cache: "no-store"
     });
 
@@ -556,7 +577,7 @@ export async function getContacts(): Promise<ApiResult<Contact[]>> {
 }
 
 export async function createContact(payload: ContactPayload): Promise<Contact> {
-  const response = await fetch(`${getApiUrl()}/contacts`, {
+  const response = await apiFetch(`${getApiUrl()}/contacts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -574,7 +595,7 @@ export async function createContact(payload: ContactPayload): Promise<Contact> {
 
 export async function getApplications(): Promise<ApiResult<Application[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/applications`, {
+    const response = await apiFetch(`${getApiUrl()}/applications`, {
       cache: "no-store"
     });
 
@@ -594,7 +615,7 @@ export async function getApplications(): Promise<ApiResult<Application[]>> {
 }
 
 export async function createApplication(payload: ApplicationPayload): Promise<Application> {
-  const response = await fetch(`${getApiUrl()}/applications`, {
+  const response = await apiFetch(`${getApiUrl()}/applications`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -614,7 +635,7 @@ export async function updateApplication(
   applicationId: string,
   payload: Partial<ApplicationPayload>
 ): Promise<Application> {
-  const response = await fetch(`${getApiUrl()}/applications/${applicationId}`, {
+  const response = await apiFetch(`${getApiUrl()}/applications/${applicationId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -631,7 +652,7 @@ export async function updateApplication(
 }
 
 export async function deleteApplication(applicationId: string): Promise<void> {
-  const response = await fetch(`${getApiUrl()}/applications/${applicationId}`, {
+  const response = await apiFetch(`${getApiUrl()}/applications/${applicationId}`, {
     method: "DELETE"
   });
 
@@ -643,7 +664,7 @@ export async function deleteApplication(applicationId: string): Promise<void> {
 
 export async function getDiscoveryCandidates(): Promise<ApiResult<DiscoveryCandidate[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/discovery-candidates`, {
+    const response = await apiFetch(`${getApiUrl()}/discovery-candidates`, {
       cache: "no-store"
     });
 
@@ -675,7 +696,7 @@ export async function getJobPostings(filters?: {
     if (filters?.title) params.set("title", filters.title);
     if (filters?.company_id) params.set("company_id", filters.company_id);
     const query = params.toString();
-    const response = await fetch(`${getApiUrl()}/job-postings${query ? `?${query}` : ""}`, {
+    const response = await apiFetch(`${getApiUrl()}/job-postings${query ? `?${query}` : ""}`, {
       cache: "no-store"
     });
 
@@ -695,7 +716,7 @@ export async function getJobPostings(filters?: {
 }
 
 export async function linkJobPostingCompany(jobPostingId: string, companyId: string): Promise<JobPosting> {
-  const response = await fetch(`${getApiUrl()}/job-postings/${jobPostingId}/link-company`, {
+  const response = await apiFetch(`${getApiUrl()}/job-postings/${jobPostingId}/link-company`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -715,7 +736,7 @@ export async function createApplicationFromJobPosting(
   jobPostingId: string,
   payload: JobPostingApplicationPayload
 ): Promise<Application> {
-  const response = await fetch(`${getApiUrl()}/job-postings/${jobPostingId}/create-application`, {
+  const response = await apiFetch(`${getApiUrl()}/job-postings/${jobPostingId}/create-application`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -732,7 +753,7 @@ export async function createApplicationFromJobPosting(
 }
 
 export async function runDemoDiscovery(): Promise<DemoDiscoveryResult> {
-  const response = await fetch(`${getApiUrl()}/discovery-candidates/run-demo-discovery`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-candidates/run-demo-discovery`, {
     method: "POST"
   });
 
@@ -745,7 +766,7 @@ export async function runDemoDiscovery(): Promise<DemoDiscoveryResult> {
 }
 
 export async function approveDiscoveryCandidate(candidateId: string): Promise<Company> {
-  const response = await fetch(`${getApiUrl()}/discovery-candidates/${candidateId}/approve`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-candidates/${candidateId}/approve`, {
     method: "POST"
   });
 
@@ -758,7 +779,7 @@ export async function approveDiscoveryCandidate(candidateId: string): Promise<Co
 }
 
 export async function rejectDiscoveryCandidate(candidateId: string): Promise<DiscoveryCandidate> {
-  const response = await fetch(`${getApiUrl()}/discovery-candidates/${candidateId}/reject`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-candidates/${candidateId}/reject`, {
     method: "POST"
   });
 
@@ -772,7 +793,7 @@ export async function rejectDiscoveryCandidate(candidateId: string): Promise<Dis
 
 export async function getDiscoverySources(): Promise<ApiResult<DiscoverySource[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/discovery-sources`, {
+    const response = await apiFetch(`${getApiUrl()}/discovery-sources`, {
       cache: "no-store"
     });
 
@@ -792,7 +813,7 @@ export async function getDiscoverySources(): Promise<ApiResult<DiscoverySource[]
 }
 
 export async function createDiscoverySource(payload: DiscoverySourcePayload): Promise<DiscoverySource> {
-  const response = await fetch(`${getApiUrl()}/discovery-sources`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-sources`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -812,7 +833,7 @@ export async function updateDiscoverySource(
   sourceId: string,
   payload: Partial<DiscoverySourcePayload>
 ): Promise<DiscoverySource> {
-  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -829,7 +850,7 @@ export async function updateDiscoverySource(
 }
 
 export async function deleteDiscoverySource(sourceId: string): Promise<void> {
-  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-sources/${sourceId}`, {
     method: "DELETE"
   });
 
@@ -840,7 +861,7 @@ export async function deleteDiscoverySource(sourceId: string): Promise<void> {
 }
 
 export async function runDiscoverySource(sourceId: string): Promise<DiscoverySourceRunResult> {
-  const response = await fetch(`${getApiUrl()}/discovery-sources/${sourceId}/run`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-sources/${sourceId}/run`, {
     method: "POST"
   });
 
@@ -853,7 +874,7 @@ export async function runDiscoverySource(sourceId: string): Promise<DiscoverySou
 }
 
 export async function runEnabledDiscoverySources(): Promise<DiscoverySourceRunResult[]> {
-  const response = await fetch(`${getApiUrl()}/discovery-sources/run-enabled`, {
+  const response = await apiFetch(`${getApiUrl()}/discovery-sources/run-enabled`, {
     method: "POST"
   });
 
@@ -867,7 +888,7 @@ export async function runEnabledDiscoverySources(): Promise<DiscoverySourceRunRe
 
 export async function getReminders(daysAhead = 7): Promise<ApiResult<Reminder[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/reminders?days_ahead=${daysAhead}`, {
+    const response = await apiFetch(`${getApiUrl()}/reminders?days_ahead=${daysAhead}`, {
       cache: "no-store"
     });
 
@@ -945,7 +966,7 @@ export async function getInterviews(filters?: {
     if (filters?.user_id) params.set("user_id", filters.user_id);
     if (filters?.outcome) params.set("outcome", filters.outcome);
     const query = params.toString();
-    const response = await fetch(`${getApiUrl()}/interviews${query ? `?${query}` : ""}`, {
+    const response = await apiFetch(`${getApiUrl()}/interviews${query ? `?${query}` : ""}`, {
       cache: "no-store"
     });
     if (!response.ok) {
@@ -963,7 +984,7 @@ export async function getInterviews(filters?: {
 }
 
 export async function createInterview(payload: InterviewPayload): Promise<Interview> {
-  const response = await fetch(`${getApiUrl()}/interviews`, {
+  const response = await apiFetch(`${getApiUrl()}/interviews`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -977,7 +998,7 @@ export async function createInterview(payload: InterviewPayload): Promise<Interv
 
 export async function getVisaData(): Promise<ApiResult<VisaData[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/visa`, { cache: "no-store" });
+    const response = await apiFetch(`${getApiUrl()}/visa`, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Backend returned ${response.status}`);
     }
@@ -994,7 +1015,7 @@ export async function getVisaData(): Promise<ApiResult<VisaData[]>> {
 
 export async function getVisaByCompany(companyId: string): Promise<ApiResult<VisaData[]>> {
   try {
-    const response = await fetch(`${getApiUrl()}/visa/by-company/${companyId}`, { cache: "no-store" });
+    const response = await apiFetch(`${getApiUrl()}/visa/by-company/${companyId}`, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Backend returned ${response.status}`);
     }
@@ -1010,7 +1031,7 @@ export async function getVisaByCompany(companyId: string): Promise<ApiResult<Vis
 }
 
 export async function createVisaData(payload: VisaDataPayload): Promise<VisaData> {
-  const response = await fetch(`${getApiUrl()}/visa`, {
+  const response = await apiFetch(`${getApiUrl()}/visa`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -1024,7 +1045,7 @@ export async function createVisaData(payload: VisaDataPayload): Promise<VisaData
 
 export async function getDashboardSummary(): Promise<ApiResult<DashboardSummary>> {
   try {
-    const response = await fetch(`${getApiUrl()}/dashboard/summary`, {
+    const response = await apiFetch(`${getApiUrl()}/dashboard/summary`, {
       cache: "no-store"
     });
 

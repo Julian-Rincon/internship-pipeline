@@ -38,7 +38,16 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.BACKEND_API_KEY }}"
+            }
+          ]
+        }
       },
       "id": "fetch-julian-reminders",
       "name": "Fetch Julian reminders",
@@ -66,7 +75,16 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.BACKEND_API_KEY }}"
+            }
+          ]
+        }
       },
       "id": "fetch-new-candidates",
       "name": "Fetch new discovery candidates",
@@ -133,10 +151,22 @@
         "contentType": "json",
         "body": {
           "values": [
-            {"name": "chat_id", "value": "={{ $env.TELEGRAM_CHAT_ID }}"},
-            {"name": "text", "value": "={{ $json.message }}"},
-            {"name": "parse_mode", "value": "Markdown"},
-            {"name": "disable_web_page_preview", "value": true}
+            {
+              "name": "chat_id",
+              "value": "={{ $env.TELEGRAM_CHAT_ID }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "Markdown"
+            },
+            {
+              "name": "disable_web_page_preview",
+              "value": true
+            }
           ]
         },
         "options": {}
@@ -149,7 +179,7 @@
         1060,
         0
       ],
-      "notes": "Calls Telegram Bot API directly using JARVIS_TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from .env. No credential setup needed in n8n UI — plug and play."
+      "notes": "Calls Telegram Bot API directly using JARVIS_TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from .env. No credential setup needed in n8n UI \u2014 plug and play."
     }
   ],
   "connections": {

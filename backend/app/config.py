@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         validation_alias="DATABASE_URL",
     )
     cors_origins: str = Field(default="http://localhost:3000", validation_alias="CORS_ORIGINS")
+    api_key: str = Field(default="", validation_alias="API_KEY")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
