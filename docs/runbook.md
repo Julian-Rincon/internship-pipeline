@@ -256,3 +256,43 @@ commits correspondientes); esto es lo que falta hacer AL MOMENTO DEL DEPLOY:
    ```
    docker compose exec backend alembic upgrade head
    ```
+
+## Deploy en Oracle Cloud (frontend)
+
+La VM (500MB RAM, Always Free) no alcanza a correr `npm run build` dentro
+del contenedor -- se agotó la memoria a mitad del build de producción
+(~4.4h antes de fallar). El build se hace en local y se sube el resultado
+ya compilado; `frontend/Dockerfile` solo empaqueta ese output, no compila
+nada.
+
+1. Build local:
+   ```bash
+   cd frontend
+   npm run build
+   cp -r .next/static .next/standalone/.next/static
+   tar -czf frontend_standalone.tar.gz -C .next/standalone .
+   ```
+
+2. Subir y extraer en el servidor:
+   ```bash
+   scp -i ~/.ssh/oracle_internship_pipeline frontend_standalone.tar.gz opc@<host>:/tmp/
+   ssh -i ~/.ssh/oracle_internship_pipeline opc@<host> \
+     "mkdir -p ~/internship-pipeline/frontend/prebuilt && \
+      tar -xzf /tmp/frontend_standalone.tar.gz -C ~/internship-pipeline/frontend/prebuilt && \
+      rm /tmp/frontend_standalone.tar.gz"
+   ```
+
+3. Reconstruir el contenedor (solo empaqueta `prebuilt/`, tarda segundos):
+   ```bash
+   ssh -i ~/.ssh/oracle_internship_pipeline opc@<host> \
+     "cd ~/internship-pipeline && sudo docker compose up -d --build frontend"
+   ```
+
+4. Verificar:
+   ```bash
+   ssh -i ~/.ssh/oracle_internship_pipeline opc@<host> \
+     "curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://localhost:3001/"
+   ```
+
+El backend, en cambio, sí compila bien en la VM (es solo `pip install`,
+mucho más liviano) -- `docker compose up -d --build backend` normal.

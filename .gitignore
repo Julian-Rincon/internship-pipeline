@@ -20,6 +20,10 @@ frontend/node_modules/
 frontend/.next/
 out/
 
+# Build local empaquetado para el deploy en Oracle Cloud (ver docs/runbook.md)
+frontend/prebuilt/
+frontend/frontend_standalone.tar.gz
+
 # Builds and coverage
 dist/
 coverage/

@@ -69,10 +69,6 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app:z
-      - frontend-node-modules:/app/node_modules
-      - frontend-next-cache:/app/.next
 
   n8n:
     image: n8nio/n8n:latest
